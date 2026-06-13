@@ -685,6 +685,83 @@ is not a reproduction of its formal measures._"""
     return
 
 
+# ------------------------------------------------------------ 8 · model-size comparison (stretch)
+@app.cell
+def _(mo):
+    run_compare = mo.ui.run_button(label="Compare model sizes ▸")
+    mo.vstack(
+        [
+            mo.md(
+                "### 08 · Scale it up  _(stretch)_\n\nThe paper's most demo-friendly "
+                "result: **bigger, deeper models sink harder.** Compare DistilGPT-2 "
+                "(6 layers) against GPT-2 (12 layers) on the same prompt, with depth "
+                "normalized to 0–1 so they line up. On a molab GPU you can extend the "
+                "list to `gpt2-large` and `gpt2-xl` and watch the trend continue — the "
+                "GPU does real, motivated work here."
+            ),
+            run_compare,
+        ],
+        gap=0.6,
+    )
+    return (run_compare,)
+
+
+@app.cell
+def _(ACCENT, mo, pd, run_compare, run_inference, styled):
+    import altair as _alt
+
+    COMPARE_PROMPT = "The quick brown fox jumps over the lazy dog."
+    # CPU-safe defaults (both cached). On a GPU, append "gpt2-large", "gpt2-xl".
+    COMPARE_MODELS = ["distilgpt2", "gpt2"]
+
+    mo.stop(
+        not run_compare.value,
+        mo.callout(
+            mo.md("Press **Compare model sizes ▸** to load and overlay the curves."),
+            kind="info",
+        ),
+    )
+
+    comp_rows = []
+    for mname in COMPARE_MODELS:
+        bd = run_inference(COMPARE_PROMPT, mname)
+        ad = bd["attn"]                       # (L, H, S, S)
+        Lc = ad.shape[0]
+        sd = ad.shape[-1]
+        for Li in range(Lc):
+            sinkc = ad[Li, :, 1:, 0].mean().item() if sd > 1 else 1.0
+            reld = Li / (Lc - 1) if Lc > 1 else 0.0
+            comp_rows.append(
+                {"model": f"{mname} ({Lc}L)", "rel_depth": reld, "layer": Li, "sink": sinkc}
+            )
+    comp_df = pd.DataFrame(comp_rows)
+
+    comp_chart = (
+        _alt.Chart(comp_df)
+        .mark_line(point=True, strokeWidth=2.5)
+        .encode(
+            x=_alt.X(
+                "rel_depth:Q",
+                title="relative depth  (0 = first layer · 1 = last)",
+                axis=_alt.Axis(format="%"),
+            ),
+            y=_alt.Y("sink:Q", title="avg attention → token 0", axis=_alt.Axis(format="%")),
+            color=_alt.Color(
+                "model:N",
+                scale=_alt.Scale(range=["#94A0AD", ACCENT]),
+                legend=_alt.Legend(title="model (depth)"),
+            ),
+            tooltip=[
+                _alt.Tooltip("model:N"),
+                _alt.Tooltip("layer:Q"),
+                _alt.Tooltip("sink:Q", format=".1%"),
+            ],
+        )
+    )
+    mo.ui.altair_chart(styled(comp_chart, h=280))
+    return
+
+
 # ------------------------------------------------------------ 9 · so what
 @app.cell
 def _(mo):
