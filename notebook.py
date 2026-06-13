@@ -98,13 +98,23 @@ def _(AutoModelForCausalLM, AutoTokenizer, functools, torch):
     def load_model(name: str):
         """Load tokenizer + model once. Cached so layer/head changes never reload."""
         tok = AutoTokenizer.from_pretrained(name)
-        model = AutoModelForCausalLM.from_pretrained(
-            name,
-            attn_implementation="eager",  # REQUIRED — SDPA/Flash return None attentions
-            dtype=torch.bfloat16 if device == "cuda" else torch.float32,
-        )
-        model = model.to(device).eval()
-        return tok, model
+        # attn_implementation="eager" is REQUIRED — SDPA/Flash return None
+        # attentions. On GPU use bf16; transformers renamed torch_dtype -> dtype
+        # in v5, so try both. On CPU keep the float32 default, which works across
+        # transformers versions (molab may ship either v4 or v5).
+        kwargs = {"attn_implementation": "eager"}
+        if device == "cuda":
+            try:
+                model = AutoModelForCausalLM.from_pretrained(
+                    name, dtype=torch.bfloat16, **kwargs
+                )
+            except TypeError:
+                model = AutoModelForCausalLM.from_pretrained(
+                    name, torch_dtype=torch.bfloat16, **kwargs
+                )
+        else:
+            model = AutoModelForCausalLM.from_pretrained(name, **kwargs)
+        return tok, model.to(device).eval()
 
     @functools.cache
     def run_inference(prompt: str, name: str = "gpt2"):
@@ -292,7 +302,7 @@ def _(attn, head_sel, layer_sel, seq_len):
 
 # ------------------------------------------------------------ 1 · hero
 @app.cell
-def _(SERIF, mo, overall_sink, peak_sink, prompt):
+def _(SERIF, mo, n_heads, n_layers, overall_sink, peak_sink):
     mo.md(
         f"""
 <div style="font:600 11px {('IBM Plex Mono, monospace')};letter-spacing:.16em;
@@ -313,8 +323,8 @@ on purpose** — and learn why it's a feature, not a bug.
     avg attention → token 0</span></div>
   <div style="font:600 30px {SERIF};color:#14181F;">{peak_sink:.0%}
     <span style="font:500 10px monospace;color:#7A828D;display:block;">
-    peak, deepest layers</span></div>
-  <div style="font:600 30px {SERIF};color:#14181F;">12×12
+    peak across layers</span></div>
+  <div style="font:600 30px {SERIF};color:#14181F;">{n_layers}×{n_heads}
     <span style="font:500 10px monospace;color:#7A828D;display:block;">
     layers × heads · gpt2</span></div>
 </div>
@@ -342,15 +352,19 @@ def _(mo, preset_dd, prompt_area, run_button):
 # ------------------------------------------------------------ 3 · tokens
 @app.cell
 def _(ACCENT, BORDER, clean_token, disp, mo, tokens, truncated):
+    import html
+
     chips = []
     for i, t in enumerate(tokens[:disp]):
         first = i == 0
+        # Escape: token text is user-derived and rendered as raw HTML here.
+        label = html.escape(clean_token(t))
         chips.append(
             f"""<span style="display:inline-block;margin:2px;padding:4px 9px;
 border-radius:6px;font:500 13px 'IBM Plex Mono',monospace;
 border:1px solid {ACCENT if first else BORDER};
 background:{ACCENT if first else '#FFFFFF'};
-color:{'#FFFFFF' if first else '#14181F'};">{clean_token(t)}</span>"""
+color:{'#FFFFFF' if first else '#14181F'};">{label}</span>"""
         )
     note = (
         f"<div style='font:500 11px monospace;color:#94A0AD;margin-top:6px;'>"
@@ -377,7 +391,7 @@ whole word, sometimes a piece of one, sometimes punctuation. The first token
 
 # ------------------------------------------------------------ 4 · attention heatmap
 @app.cell
-def _(A, ACCENT, disp, mo, pd, pos_label, styled, tokens):
+def _(A, disp, mo, pd, pos_label, styled, tokens):
     import altair as _alt
 
     rows = []
@@ -416,7 +430,7 @@ def _(A, ACCENT, disp, mo, pd, pos_label, styled, tokens):
 
 Each token decides how much to **listen to** each earlier token. Read a row
 left-to-right: that's where one token sends its attention. Watch the leftmost
-column ({ACCENT and 'token 0'}) — it tends to glow.
+column (token 0) — it tends to glow.
 """
     )
     return df, heat, labels
