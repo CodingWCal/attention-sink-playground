@@ -262,16 +262,42 @@ def _(hidden, n_layers, seq_len):
     return collapse, deepest_collapse
 
 
+# ============================================================ shared layer state
+@app.cell
+def _(mo, peak_layer):
+    # One source of truth for the displayed layer, written by BOTH the slider and
+    # the autoplay ticker — so "▶ play depth" can sweep every depth-linked view
+    # (heatmap, sink curve, collapse scatter) at once. Re-runs only when a new
+    # prompt is analysed, which resets the view to that prompt's peak layer.
+    get_layer, set_layer = mo.state(peak_layer)
+    return get_layer, set_layer
+
+
 # ============================================================ layer / head selectors
 @app.cell
-def _(mo, n_heads, n_layers, peak_layer):
+def _(get_layer, mo, n_heads, n_layers, set_layer):
     layer_sel = mo.ui.slider(
-        0, n_layers - 1, value=peak_layer, step=1, label="layer", show_value=True
+        0, n_layers - 1, value=get_layer(), step=1, label="layer",
+        show_value=True, on_change=set_layer,
     )
     head_sel = mo.ui.slider(
         0, n_heads - 1, value=0, step=1, label="head", show_value=True
     )
-    return head_sel, layer_sel
+    playing = mo.ui.checkbox(label="▶ play depth")
+    ticker = mo.ui.refresh(options=["0.5s", "0.8s", "1.2s"], default_interval="0.8s")
+    return head_sel, layer_sel, playing, ticker
+
+
+# ============================================================ autoplay ticker
+@app.cell
+def _(n_layers, playing, set_layer, ticker):
+    # Each tick advances the shared layer (wrapping at the top) while "play" is on.
+    # A functional update means this cell never *reads* the layer state, so it fires
+    # on the ticker alone and can't retrigger itself into a feedback loop.
+    ticker.value
+    if playing.value:
+        set_layer(lambda cur: (cur + 1) % n_layers)
+    return
 
 
 # ============================================================ per-selection metrics
@@ -303,8 +329,42 @@ def _(attn, head_sel, layer_sel, seq_len):
 # ------------------------------------------------------------ 1 · hero
 @app.cell
 def _(SERIF, mo, n_heads, n_layers, overall_sink, peak_sink):
+    s_avg = int(round(overall_sink * 100))
+    s_peak = int(round(peak_sink * 100))
+    # The two % stats count up from 0 via animated @property custom properties.
+    # Fallbacks are layered: if @property is unsupported the counter rests on its
+    # initial-value (the true number); if the whole <style> is stripped, the plain
+    # text inside the span shows instead. Either way a correct number is visible.
     mo.md(
         f"""
+<style>
+@property --aspA {{ syntax:'<integer>'; initial-value:{s_avg}; inherits:true; }}
+@property --aspB {{ syntax:'<integer>'; initial-value:{s_peak}; inherits:true; }}
+@keyframes aspCountA {{ from {{ --aspA:0 }} to {{ --aspA:{s_avg} }} }}
+@keyframes aspCountB {{ from {{ --aspB:0 }} to {{ --aspB:{s_peak} }} }}
+@keyframes aspRise {{ from {{ opacity:0; transform:translateY(9px) }}
+                      to {{ opacity:1; transform:none }} }}
+@keyframes aspFill {{ from {{ width:0 }} to {{ width:var(--w) }} }}
+.asp-stats {{ display:flex; gap:24px; margin-top:10px; flex-wrap:wrap; }}
+.asp-stat {{ animation:aspRise .7s ease-out both; }}
+.asp-stat:nth-child(2) {{ animation-delay:.09s; }}
+.asp-stat:nth-child(3) {{ animation-delay:.18s; }}
+.asp-num {{ font:600 30px {SERIF}; line-height:1; }}
+.asp-a, .asp-b {{ font-size:0 !important; animation-duration:1.1s;
+  animation-timing-function:ease-out; animation-fill-mode:both; }}
+.asp-a {{ animation-name:aspCountA; }}
+.asp-b {{ animation-name:aspCountB; }}
+.asp-a::after {{ font:600 30px {SERIF}; color:#2E6BDB;
+  counter-reset:aspA var(--aspA); content:counter(aspA) '%'; }}
+.asp-b::after {{ font:600 30px {SERIF}; color:#14181F;
+  counter-reset:aspB var(--aspB); content:counter(aspB) '%'; }}
+.asp-bar {{ height:3px; width:74px; border-radius:2px; background:#E2E8F0;
+  margin-top:6px; overflow:hidden; }}
+.asp-bar > i {{ display:block; height:100%; background:#2E6BDB;
+  animation:aspFill 1.1s ease-out both; }}
+.asp-cap {{ font:500 10px monospace; color:#7A828D; display:block; margin-top:4px; }}
+</style>
+
 <div style="font:600 11px {('IBM Plex Mono, monospace')};letter-spacing:.16em;
 text-transform:uppercase;color:#2E6BDB;">An interactive marimo notebook ·
 arXiv:2504.02732 · COLM 2025</div>
@@ -317,16 +377,21 @@ Every LLM has a strange habit: it dumps a huge share of attention onto a token
 that often means nothing. Type a sentence, watch it happen live, then **break it
 on purpose** — and learn why it's a feature, not a bug.
 
-<div style="display:flex;gap:14px;margin-top:6px;">
-  <div style="font:600 30px {SERIF};color:#2E6BDB;">{overall_sink:.0%}
-    <span style="font:500 10px monospace;color:#7A828D;display:block;">
-    avg attention → token 0</span></div>
-  <div style="font:600 30px {SERIF};color:#14181F;">{peak_sink:.0%}
-    <span style="font:500 10px monospace;color:#7A828D;display:block;">
-    peak across layers</span></div>
-  <div style="font:600 30px {SERIF};color:#14181F;">{n_layers}×{n_heads}
-    <span style="font:500 10px monospace;color:#7A828D;display:block;">
-    layers × heads · gpt2</span></div>
+<div class="asp-stats">
+  <div class="asp-stat">
+    <span class="asp-num asp-a" style="color:#2E6BDB;">{s_avg}%</span>
+    <div class="asp-bar"><i style="--w:{s_avg}%;"></i></div>
+    <span class="asp-cap">avg attention → token 0</span>
+  </div>
+  <div class="asp-stat">
+    <span class="asp-num asp-b" style="color:#14181F;">{s_peak}%</span>
+    <div class="asp-bar"><i style="--w:{s_peak}%;background:#14181F;"></i></div>
+    <span class="asp-cap">peak across layers</span>
+  </div>
+  <div class="asp-stat">
+    <span class="asp-num" style="color:#14181F;">{n_layers}×{n_heads}</span>
+    <span class="asp-cap">layers × heads · gpt2</span>
+  </div>
 </div>
 """
     )
@@ -477,6 +542,11 @@ def _(
             tooltip=[_alt.Tooltip("token:N"), _alt.Tooltip("received:Q", format=".1%")],
         )
     )
+    ann = (
+        _alt.Chart(pd.DataFrame({"token": [labels[0]], "received": [received[0]]}))
+        .mark_text(text="the sink ▲", dy=-9, color=ACCENT, fontSize=11, fontWeight=600)
+        .encode(x=_alt.X("token:O", sort=labels), y=_alt.Y("received:Q"))
+    )
 
     stat = mo.md(
         f"""<div style="display:flex;gap:24px;align-items:baseline;">
@@ -495,9 +565,47 @@ all heads at layer {L}: {sink_layer_allheads:.0%}</span></div></div>"""
                 "first token is an **attention sink**."
             ),
             stat,
-            mo.ui.altair_chart(styled(bars, h=240)),
+            mo.ui.altair_chart(styled(bars + ann, h=240)),
         ],
         gap=0.8,
+    )
+    return
+
+
+# ------------------------------------------------------------ 3b · verdict gauge
+@app.cell
+def _(SERIF, mo, overall_sink):
+    v = overall_sink
+    if v < 0.30:
+        word, blurb = "a mild sink", "only a little spare attention parks on token 0"
+    elif v < 0.55:
+        word, blurb = "a moderate sink", "a good share of attention parks on token 0"
+    elif v < 0.75:
+        word, blurb = "a strong sink", "most spare attention parks on the first token"
+    else:
+        word, blurb = "a very strong sink", "the first token is doing heavy lifting"
+    pct = int(round(v * 100))
+    mo.md(
+        f"""
+<style>
+@keyframes aspGauge {{ from {{ width:0 }} to {{ width:{pct}% }} }}
+.asp-g-track {{ height:10px; border-radius:6px;
+  background:linear-gradient(90deg,#EEF2F7,#DCE6F5); overflow:hidden; }}
+.asp-g-fill {{ height:100%; border-radius:6px;
+  background:linear-gradient(90deg,#7FA8E8,#2E6BDB); animation:aspGauge 1s ease-out both; }}
+.asp-g-row {{ display:flex; justify-content:space-between; font:500 10px monospace;
+  color:#94A0AD; margin-top:4px; }}
+</style>
+
+<div style="border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;
+background:#FFFFFF;margin:.4em 0;">
+<div style="font:600 16px {SERIF};color:#14181F;margin-bottom:9px;">
+Your sentence has <span style="color:#2E6BDB;">{word}</span> — {pct}% of spare
+attention pools on token&nbsp;0.</div>
+<div class="asp-g-track"><div class="asp-g-fill" style="width:{pct}%;"></div></div>
+<div class="asp-g-row"><span>0%</span><span>{blurb}</span><span>100%</span></div>
+</div>
+"""
     )
     return
 
@@ -525,7 +633,7 @@ bug; a learned defense.
 
 # ------------------------------------------------------------ 7 · grows with depth
 @app.cell
-def _(head_sel, layer_sel, layerwise, mo, n_layers, pd, styled):
+def _(head_sel, layer_sel, layerwise, mo, n_layers, pd, playing, styled, ticker):
     import altair as _alt
 
     curve_df = pd.DataFrame(
@@ -540,6 +648,12 @@ def _(head_sel, layer_sel, layerwise, mo, n_layers, pd, styled):
             tooltip=[_alt.Tooltip("layer:Q"), _alt.Tooltip("sink:Q", format=".1%")],
         )
     )
+    peak_txt = (
+        _alt.Chart(pd.DataFrame({"layer": [n_layers - 1], "sink": [float(layerwise.max())]}))
+        .mark_text(text="stronger with depth →", align="right", dx=-4, dy=-8,
+                   color="#7A828D", fontSize=10)
+        .encode(x="layer:Q", y="sink:Q")
+    )
     rule = (
         _alt.Chart(pd.DataFrame({"layer": [layer_sel.value]}))
         .mark_rule(color="#D9634F", strokeDash=[4, 3])
@@ -549,14 +663,107 @@ def _(head_sel, layer_sel, layerwise, mo, n_layers, pd, styled):
     mo.vstack(
         [
             mo.md(
-                "### 05 · It grows with depth\n\nDrag the **layer** slider and watch "
-                "the heatmap and the headline number above change. Averaged over "
-                "heads, the sink generally *strengthens* in deeper layers — exactly "
-                "what the paper predicts: deeper networks need stronger sinks to "
-                "avoid collapse."
+                "### 05 · It grows with depth\n\nDrag the **layer** slider — or hit "
+                "**▶ play depth** — and watch the heatmap, this curve, and the "
+                "collapse plot just below all move together. Averaged over heads, "
+                "the sink generally *strengthens* in deeper layers — exactly what "
+                "the paper predicts: deeper networks need stronger sinks to avoid "
+                "collapse."
             ),
-            mo.hstack([layer_sel, head_sel], justify="start", gap=2),
-            mo.ui.altair_chart(styled(line + rule, h=240)),
+            mo.hstack(
+                [layer_sel, head_sel, playing, ticker],
+                justify="start", gap=1.5, align="center",
+            ),
+            mo.ui.altair_chart(styled(line + rule + peak_txt, h=240)),
+        ],
+        gap=0.8,
+    )
+    return
+
+
+# ------------------------------------------------------------ 6 · collapse scatter (PCA)
+@app.cell
+def _(hidden, n_layers, np, pd, seq_len):
+    # Project every layer's token representations into ONE shared 2-D frame (the
+    # top-2 principal components, fit on content tokens pooled across all layers) so
+    # the dots live in a stable space and you can literally watch them drift
+    # together with depth — over-mixing / representational collapse, made visible.
+    # Locals are underscore-prefixed so marimo keeps them cell-private.
+    _H = hidden.numpy()                          # (L+1, S, D)
+    _, _S, _D = _H.shape
+    _fit = _H[:, 1:, :].reshape(-1, _D) if seq_len > 1 else _H.reshape(-1, _D)
+    _mean = _fit.mean(axis=0)
+    _, _, _Vt = np.linalg.svd(_fit - _mean, full_matrices=False)
+    _PC = _Vt[:2]                                # (2, D)
+    _proj = (_H - _mean) @ _PC.T                 # (L+1, S, 2)
+    _rows = []
+    for _Li in range(n_layers):                  # hidden[_Li+1] = output of attn layer _Li
+        _P = _proj[_Li + 1]
+        for _ti in range(_S):
+            _rows.append(
+                {
+                    "layer": _Li,
+                    "tok": _ti,
+                    "x": float(_P[_ti, 0]),
+                    "y": float(_P[_ti, 1]),
+                    "kind": "first token" if _ti == 0 else "content token",
+                }
+            )
+    scatter_all = pd.DataFrame(_rows)
+    return (scatter_all,)
+
+
+@app.cell
+def _(ACCENT, L, collapse, mo, scatter_all, styled, tokens):
+    import altair as _alt
+
+    _pts_df = scatter_all[scatter_all["layer"] == L].copy()
+    _pts_df["token"] = [
+        tokens[int(t)] if int(t) < len(tokens) else str(t) for t in _pts_df["tok"]
+    ]
+    # Lock the axis ranges across ALL layers so shrinking spread reads as the points
+    # moving together, not the chart quietly rescaling under them.
+    _xr = [float(scatter_all["x"].min()), float(scatter_all["x"].max())]
+    _yr = [float(scatter_all["y"].min()), float(scatter_all["y"].max())]
+
+    _pts = (
+        _alt.Chart(_pts_df)
+        .mark_circle(size=150, opacity=0.85)
+        .encode(
+            x=_alt.X("x:Q", scale=_alt.Scale(domain=_xr), axis=None),
+            y=_alt.Y("y:Q", scale=_alt.Scale(domain=_yr), axis=None),
+            color=_alt.Color(
+                "kind:N",
+                scale=_alt.Scale(
+                    domain=["content token", "first token"],
+                    range=["#C9D6E8", ACCENT],
+                ),
+                legend=_alt.Legend(title=None, orient="top"),
+            ),
+            tooltip=[_alt.Tooltip("token:N"), _alt.Tooltip("kind:N")],
+        )
+    )
+    _sim = collapse[L] if L < len(collapse) else float("nan")
+    _sim_txt = f"{_sim:.0%}" if _sim == _sim else "—"   # nan-safe (single-token prompts)
+
+    mo.vstack(
+        [
+            mo.md(
+                f"""### 06 · Watch the tokens collapse
+
+Each dot is one token's **internal representation**, squashed to 2-D. Use the
+**layer** slider above — or **▶ play depth** — and watch the content tokens
+(<span style="color:#9DB3D6;font-weight:600;">pale</span>) drift into a single
+clump as you go deeper, while the
+<span style="color:{ACCENT};font-weight:600;">first token</span> sits off on its
+own. That clumping *is* over-mixing: by this layer the content tokens are
+**{_sim_txt} similar** to each other. The sink is what keeps them from collapsing
+even faster.
+
+_2-D PCA of the hidden states on a shared frame across layers — illustrative, in
+the spirit of the paper, not its formal rank measure._"""
+            ),
+            mo.ui.altair_chart(styled(_pts, h=300)),
         ],
         gap=0.8,
     )
@@ -570,7 +777,7 @@ def _(mo):
     mo.vstack(
         [
             mo.md(
-                "### 06 · Break the first token\n\nThe sink is a *position* effect, "
+                "### 07 · Break the first token\n\nThe sink is a *position* effect, "
                 "not magic about a special word. Run six prompt variants and compare "
                 "how much attention still pools on token 0. Repetition, length, and a "
                 "punctuation-first start all move the needle."
@@ -583,7 +790,7 @@ def _(mo):
 
 
 @app.cell
-def _(mo, pd, run_experiment, run_inference, styled):
+def _(ACCENT, mo, overall_sink, pd, prompt, run_experiment, run_inference, seq_len, styled):
     import altair as _alt
 
     VARIANTS = {
@@ -613,15 +820,23 @@ def _(mo, pd, run_experiment, run_inference, styled):
         s = a.shape[-1]
         sink = a[:, :, 1:, 0].mean().item() if s > 1 else 1.0
         exp_rows.append({"variant": name, "sink": sink, "tokens": s})
+    # Drop the live prompt onto the same scale — already inferred, so its sink is
+    # free. This is the "leaderboard": see where YOUR sentence ranks.
+    exp_rows.append({"variant": "★ your prompt", "sink": overall_sink, "tokens": seq_len})
     exp_df = pd.DataFrame(exp_rows)
+    order = list(VARIANTS) + ["★ your prompt"]
 
     exp_chart = (
         _alt.Chart(exp_df)
-        .mark_bar(color="#2E6BDB")
+        .mark_bar()
         .encode(
-            x=_alt.X("variant:N", sort=list(VARIANTS), title=None,
-                     axis=_alt.Axis(labelAngle=-30)),
+            x=_alt.X("variant:N", sort=order, title=None, axis=_alt.Axis(labelAngle=-30)),
             y=_alt.Y("sink:Q", title="avg attention → token 0", axis=_alt.Axis(format="%")),
+            color=_alt.condition(
+                _alt.datum.variant == "★ your prompt",
+                _alt.value("#D9634F"),
+                _alt.value(ACCENT),
+            ),
             tooltip=[
                 _alt.Tooltip("variant:N"),
                 _alt.Tooltip("sink:Q", format=".1%"),
@@ -629,7 +844,17 @@ def _(mo, pd, run_experiment, run_inference, styled):
             ],
         )
     )
-    mo.ui.altair_chart(styled(exp_chart, h=260))
+    mo.vstack(
+        [
+            mo.md(
+                f"The <span style='color:#D9634F;font-weight:600;'>★ your prompt</span> "
+                f"bar is your current sentence (*“{prompt[:48]}{'…' if len(prompt) > 48 else ''}”*) "
+                f"— see where it ranks against the six controlled variants."
+            ),
+            mo.ui.altair_chart(styled(exp_chart, h=280)),
+        ],
+        gap=0.6,
+    )
     return
 
 
@@ -677,7 +902,7 @@ def _(ACCENT, collapse, deepest_collapse, layerwise, mo, n_layers, pd, styled):
     mo.vstack(
         [
             mo.md(
-                f"""### 07 · Feel the collapse  _(stretch)_
+                f"""### 08 · Feel the collapse  _(stretch)_
 
 The sink is the model's *defense* — here's what it defends against. The
 <span style="color:#D9634F;font-weight:600;">red</span> line is how similar the
@@ -706,7 +931,7 @@ def _(mo):
     mo.vstack(
         [
             mo.md(
-                "### 08 · Scale it up  _(stretch)_\n\nThe paper's most demo-friendly "
+                "### 09 · Scale it up  _(stretch)_\n\nThe paper's most demo-friendly "
                 "result: **bigger, deeper models sink harder.** Compare DistilGPT-2 "
                 "(6 layers) against GPT-2 (12 layers) on the same prompt, with depth "
                 "normalized to 0–1 so they line up. On a molab GPU you can extend the "
