@@ -2,3 +2,5 @@
 .venv/
 *.pyc
 .marimo/
+__marimo__/
+*.tmp.html
