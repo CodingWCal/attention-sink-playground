@@ -231,6 +231,27 @@ def _(attn, n_layers, seq_len):
     return layerwise, overall_sink, peak_layer, peak_sink
 
 
+@app.cell
+def _(hidden, n_layers, seq_len):
+    # Over-mixing meter (PRD stretch §9.1): mean pairwise cosine similarity
+    # between token representations at each layer, EXCLUDING the sink token 0, so
+    # we measure collapse among the tokens that carry meaning. Higher = more
+    # over-mixed. hidden[1:] aligns the L+1 hidden states to the L attn layers.
+    collapse = []
+    for Lh in range(1, n_layers + 1):
+        H = hidden[Lh][1:] if seq_len > 1 else hidden[Lh]
+        if H.shape[0] > 1:
+            Hn = H / H.norm(dim=-1, keepdim=True).clamp_min(1e-8)
+            sim = Hn @ Hn.T
+            n = sim.shape[0]
+            off = (sim.sum() - sim.diagonal().sum()) / (n * n - n)
+            collapse.append(float(off))
+        else:
+            collapse.append(float("nan"))
+    deepest_collapse = collapse[-1] if collapse else float("nan")
+    return collapse, deepest_collapse
+
+
 # ============================================================ layer / head selectors
 @app.cell
 def _(mo, n_heads, n_layers, peak_layer):
@@ -595,6 +616,72 @@ def _(mo, pd, run_experiment, run_inference, styled):
         )
     )
     mo.ui.altair_chart(styled(exp_chart, h=260))
+    return
+
+
+# ------------------------------------------------------------ 7 · over-mixing meter (stretch)
+@app.cell
+def _(ACCENT, collapse, deepest_collapse, layerwise, mo, n_layers, pd, styled):
+    import altair as _alt
+
+    sink_df = pd.DataFrame(
+        {"layer": list(range(n_layers)), "v": [float(x) for x in layerwise]}
+    )
+    coll_df = pd.DataFrame({"layer": list(range(n_layers)), "v": collapse})
+
+    sink_l = (
+        _alt.Chart(sink_df)
+        .mark_line(point=True, color=ACCENT, strokeWidth=2.5)
+        .encode(
+            x=_alt.X("layer:Q", title="layer (depth →)", axis=_alt.Axis(tickMinStep=1)),
+            y=_alt.Y(
+                "v:Q",
+                axis=_alt.Axis(title="attention → token 0", format="%", titleColor=ACCENT),
+            ),
+            tooltip=[_alt.Tooltip("layer:Q"), _alt.Tooltip("v:Q", format=".1%", title="sink")],
+        )
+    )
+    coll_l = (
+        _alt.Chart(coll_df)
+        .mark_line(point=True, color="#D9634F", strokeDash=[5, 3], strokeWidth=2.5)
+        .encode(
+            x=_alt.X("layer:Q"),
+            y=_alt.Y(
+                "v:Q",
+                axis=_alt.Axis(
+                    title="token similarity (collapse)", orient="right", titleColor="#D9634F"
+                ),
+            ),
+            tooltip=[
+                _alt.Tooltip("layer:Q"),
+                _alt.Tooltip("v:Q", format=".2f", title="similarity"),
+            ],
+        )
+    )
+    meter = _alt.layer(sink_l, coll_l).resolve_scale(y="independent")
+
+    mo.vstack(
+        [
+            mo.md(
+                f"""### 07 · Feel the collapse  _(stretch)_
+
+The sink is the model's *defense* — here's what it defends against. The
+<span style="color:#D9634F;font-weight:600;">red</span> line is how similar the
+content tokens' internal representations are to each other at each layer (mean
+cosine similarity, token 0 excluded); higher means they're blurring together —
+the **over-mixing** the paper warns about. The
+<span style="color:#2E6BDB;font-weight:600;">blue</span> line is the sink. They
+climb together with depth: as mixing pushes representations toward collapse
+(≈{deepest_collapse:.0%} similar by the last layer), the model leans harder on
+the first-token parking spot.
+
+_This meter illustrates representational collapse in the spirit of the paper; it
+is not a reproduction of its formal measures._"""
+            ),
+            mo.ui.altair_chart(styled(meter, h=260)),
+        ],
+        gap=0.8,
+    )
     return
 
 
