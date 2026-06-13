@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #E9E8E4; font-family: 'Source Sans 3', 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; }
+  </style>
+</helmet>
+
+<div style="max-width: 1120px; margin: 0 auto; padding: 64px 36px 96px; display: flex; flex-direction: column; gap: 44px;">
+
+  <!-- ============ PAGE HEADER ============ -->
+  <div data-screen-label="Header" style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #8A857A;">Attention Sink Playground &middot; Stage 1 design &middot; direction explorations</div>
+    <div style="font: 500 42px/1.08 'Newsreader', Georgia, serif; color: #1E1B16; letter-spacing: -0.01em;">Four looks for the notebook</div>
+    <div style="font-size: 17px; line-height: 1.55; color: #57534A; max-width: 720px; text-wrap: pretty;">Each frame below is a live mini-mock of the notebook's hero zone &mdash; real simulated attention data, real tokenization, the causal mask rendered honestly. Pick one direction (or mix elements) and I'll build the full 12-section dynamic notebook in it.</div>
+  </div>
+
+  <!-- ============ ASSUMPTIONS & REASONING ============ -->
+  <div data-screen-label="Reasoning" style="background: #FFFFFF; border-radius: 14px; padding: 32px 40px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #8A857A;">Assumptions &amp; reasoning</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px; font-size: 14.5px; line-height: 1.6; color: #3D3A33;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div><strong style="color: #1E1B16;">Constant across all four directions</strong> (locked by the PRD and your answers):</div>
+        <div>&bull;&ensp;Type trio: <span style="font-family: 'Newsreader', serif; font-weight: 500;">Newsreader</span> for headings, Source Sans 3 for body, <span style="font: 500 13px 'IBM Plex Mono', monospace;">IBM Plex Mono</span> for tokens, code and cell tags.</div>
+        <div>&bull;&ensp;One accent is reserved <em>exclusively</em> for the sink: token-0 chip, first heatmap column, headline metric, sink curves. Nothing else gets it.</div>
+        <div>&bull;&ensp;Real tokenization shown (the <span style="font: 500 13px 'IBM Plex Mono', monospace;">&middot;</span> marks a leading space); causal mask drawn as near-empty cells; query row 0 excluded from the headline metric &mdash; per PRD &sect;11.</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div><strong style="color: #1E1B16;">Hybrid marimo affordance</strong> &mdash; per your pick: no heavy notebook chrome, but every panel carries a small mono cell tag (<span style="font: 500 12px 'IBM Plex Mono', monospace;">mo.ui.slider</span>, <span style="font: 500 12px 'IBM Plex Mono', monospace;">altair</span>&hellip;) naming the marimo element it maps to, so Claude Code can translate panel-for-panel.</div>
+        <div><strong style="color: #1E1B16;">What varies here:</strong> theme (2 light / 2 dark), accent hue, heatmap colormap, and hero layout density &mdash; from editorial two-column to dense console.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DIRECTION 01 — INK & AMBER ============ -->
+  <div data-screen-label="Direction 01 — Ink &amp; Amber" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <div style="font: 600 12px 'IBM Plex Mono', monospace; letter-spacing: 0.1em; color: #B07016;">DIRECTION 01</div>
+      <div style="font: 500 22px 'Newsreader', Georgia, serif; color: #1E1B16;">Ink &amp; Amber</div>
+      <div style="font-size: 14px; color: #6E6A60;">warm paper &middot; amber sink &middot; neutral-ink heatmap, sink column in accent &middot; two-column editorial hero</div>
+    </div>
+    <div style="background: #FFFFFF; border-radius: 14px; padding: 16px;">
+      <div style="background: #FBF9F4; border: 1px solid #EFEAE0; border-radius: 10px; padding: 44px 48px; display: flex; gap: 32px;">
+        <div style="width: 3px; border-radius: 2px; background: linear-gradient(#C98019, rgba(201,128,25,0.08)); flex-shrink: 0;"></div>
+        <div style="flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 332px; gap: 44px;">
+          <!-- left: narrative -->
+          <div style="display: flex; flex-direction: column; gap: 22px; min-width: 0;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #C98019;">marimo notebook &middot; arXiv:2504.02732</div>
+              <div style="font: 500 38px/1.1 'Newsreader', Georgia, serif; color: #211C14; letter-spacing: -0.01em; text-wrap: pretty;">Why do language models pour attention onto their <em style="color: #B96E0F;">first token</em>?</div>
+              <div style="font-size: 15.5px; line-height: 1.55; color: #5C564A; text-wrap: pretty;">Type a sentence, watch a Transformer dump nearly half its attention on a token that means almost nothing &mdash; and see why that's a feature, not a bug.</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 9px;">
+              <div style="align-self: flex-start; font: 500 10px 'IBM Plex Mono', monospace; color: #8A8170; border: 1px solid #E4DECF; border-radius: 4px; padding: 2px 7px; background: #FFFFFF;">tokenizer &middot; gpt2</div>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <div style="font: 600 13px 'IBM Plex Mono', monospace; color: #2B1A04; background: #E9A23B; border: 1px solid #C98019; border-radius: 6px; padding: 5px 10px;">{{ firstToken }}</div>
+                <sc-for list="{{ restTokens }}" as="t" hint-placeholder-count="6">
+                  <div style="font: 500 13px 'IBM Plex Mono', monospace; color: #3D3527; background: #FFFFFF; border: 1px solid #E0D9C7; border-radius: 6px; padding: 5px 10px;">{{ t }}</div>
+                </sc-for>
+              </div>
+              <div style="font-size: 12.5px; color: #8A8170;">token 0 is the sink &middot; <span style="font: 500 12px 'IBM Plex Mono', monospace;">&middot;</span> marks a leading space</div>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 14px; border-top: 1px solid #ECE6D8; padding-top: 20px;">
+              <div style="font: 600 54px/1 'Newsreader', Georgia, serif; color: #B96E0F; letter-spacing: -0.02em;">{{ sinkPct }}</div>
+              <div style="font-size: 13px; line-height: 1.45; color: #6E6655;">of attention mass lands on token 0<br>layer 9 &middot; head 4 &middot; queries 1&hellip;n</div>
+            </div>
+          </div>
+          <!-- right: evidence -->
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="background: #FFFFFF; border: 1px solid #E8E1D1; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="align-self: flex-start; font: 500 10px 'IBM Plex Mono', monospace; color: #8A8170; border: 1px solid #E4DECF; border-radius: 4px; padding: 2px 7px; background: #FBF9F4;">altair &middot; layer 9, head 4</div>
+              {{ hm1 }}
+            </div>
+            <div style="background: #FFFFFF; border: 1px solid #E8E1D1; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="align-self: flex-start; font: 500 10px 'IBM Plex Mono', monospace; color: #8A8170; border: 1px solid #E4DECF; border-radius: 4px; padding: 2px 7px; background: #FBF9F4;">sink strength by layer</div>
+              {{ spark1 }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 22px; padding: 16px 12px 6px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #FBF9F4; border: 1px solid #D8D2C4;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">bg #FBF9F4</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #211C14;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">ink #211C14</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #C98019;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">sink accent #C98019</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #463C2B;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">heatmap hi #463C2B</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #5C564A;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">body #5C564A</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DIRECTION 02 — GRAPH PAPER BLUE ============ -->
+  <div data-screen-label="Direction 02 — Graph Paper Blue" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <div style="font: 600 12px 'IBM Plex Mono', monospace; letter-spacing: 0.1em; color: #2E6BDB;">DIRECTION 02</div>
+      <div style="font: 500 22px 'Newsreader', Georgia, serif; color: #1E1B16;">Graph Paper Blue</div>
+      <div style="font-size: 14px; color: #6E6A60;">cool white &middot; electric-blue sink &middot; classic viridis heatmap &middot; centered column with stat band</div>
+    </div>
+    <div style="background: #FFFFFF; border-radius: 14px; padding: 16px;">
+      <div style="background: #F8FAFC; border: 1px solid #E8EDF3; border-radius: 10px; padding: 48px 48px 44px; display: flex; flex-direction: column; align-items: center; gap: 26px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; max-width: 620px;">
+          <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #2E6BDB;">marimo notebook &middot; arXiv:2504.02732</div>
+          <div style="font: 500 38px/1.1 'Newsreader', Georgia, serif; color: #14181F; letter-spacing: -0.01em; text-wrap: pretty;">Why do language models pour attention onto their <em style="color: #2E6BDB;">first token</em>?</div>
+          <div style="font-size: 15.5px; line-height: 1.55; color: #4E5663; text-wrap: pretty;">Type a sentence and watch the model park its spare attention on token 0 &mdash; live, layer by layer.</div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center;">
+          <div style="font: 600 13px 'IBM Plex Mono', monospace; color: #FFFFFF; background: #2E6BDB; border: 1px solid #2E6BDB; border-radius: 6px; padding: 5px 10px;">{{ firstToken }}</div>
+          <sc-for list="{{ restTokens }}" as="t" hint-placeholder-count="6">
+            <div style="font: 500 13px 'IBM Plex Mono', monospace; color: #303843; background: #FFFFFF; border: 1px solid #D9E0E9; border-radius: 6px; padding: 5px 10px;">{{ t }}</div>
+          </sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; width: 100%; max-width: 640px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px;">
+          <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 3px; border-right: 1px solid #EBF0F5;">
+            <div style="font: 600 26px 'Newsreader', Georgia, serif; color: #2E6BDB;">{{ sinkPct }}</div>
+            <div style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #7A828D; letter-spacing: 0.04em;">attention &rarr; token 0</div>
+          </div>
+          <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 3px; border-right: 1px solid #EBF0F5;">
+            <div style="font: 600 26px 'Newsreader', Georgia, serif; color: #14181F;">12</div>
+            <div style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #7A828D; letter-spacing: 0.04em;">layers &middot; gpt2</div>
+          </div>
+          <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 3px;">
+            <div style="font: 600 26px 'Newsreader', Georgia, serif; color: #14181F;">12</div>
+            <div style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #7A828D; letter-spacing: 0.04em;">heads per layer</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap; justify-content: center;">
+          <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="align-self: flex-start; font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">altair &middot; viridis &middot; layer 9, head 4</div>
+            {{ hm2 }}
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1;">
+              <div style="align-self: flex-start; font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">mo.ui.slider &middot; layer</div>
+              <div style="display: flex; flex-direction: column; gap: 8px; width: 240px;">
+                <div style="display: flex; justify-content: space-between; font: 500 11px 'IBM Plex Mono', monospace; color: #4E5663;"><span>layer</span><span style="color: #2E6BDB;">9 / 12</span></div>
+                <div style="position: relative; height: 4px; border-radius: 2px; background: #E2E8F0;">
+                  <div style="position: absolute; left: 0; top: 0; height: 4px; width: 72%; border-radius: 2px; background: #2E6BDB;"></div>
+                  <div style="position: absolute; left: 72%; top: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; border-radius: 50%; background: #FFFFFF; border: 2px solid #2E6BDB; box-shadow: 0 1px 3px rgba(20,24,31,0.18);"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font: 500 11px 'IBM Plex Mono', monospace; color: #4E5663; margin-top: 6px;"><span>head</span><span style="color: #2E6BDB;">4 / 12</span></div>
+                <div style="position: relative; height: 4px; border-radius: 2px; background: #E2E8F0;">
+                  <div style="position: absolute; left: 0; top: 0; height: 4px; width: 31%; border-radius: 2px; background: #2E6BDB;"></div>
+                  <div style="position: absolute; left: 31%; top: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; border-radius: 50%; background: #FFFFFF; border: 2px solid #2E6BDB; box-shadow: 0 1px 3px rgba(20,24,31,0.18);"></div>
+                </div>
+              </div>
+            </div>
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="align-self: flex-start; font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">sink strength by layer</div>
+              {{ spark2 }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 22px; padding: 16px 12px 6px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #F8FAFC; border: 1px solid #D9E0E9;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">bg #F8FAFC</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #14181F;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">ink #14181F</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #2E6BDB;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">sink accent #2E6BDB</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: linear-gradient(90deg, #440154, #277f8e, #fde725);"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">viridis ramp</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DIRECTION 03 — CONSOLE AMBER ============ -->
+  <div data-screen-label="Direction 03 — Console Amber" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <div style="font: 600 12px 'IBM Plex Mono', monospace; letter-spacing: 0.1em; color: #B07016;">DIRECTION 03</div>
+      <div style="font: 500 22px 'Newsreader', Georgia, serif; color: #1E1B16;">Console Amber</div>
+      <div style="font-size: 14px; color: #6E6A60;">dark lab &middot; amber glow heatmap &middot; dense bordered panels, everything labeled &middot; instrument-panel layout</div>
+    </div>
+    <div style="background: #FFFFFF; border-radius: 14px; padding: 16px;">
+      <div style="background: #15120C; border-radius: 10px; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; border-bottom: 1px solid #2A2417;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #F2A33C;"></div>
+            <div style="font: 600 12px 'IBM Plex Mono', monospace; letter-spacing: 0.08em; color: #ECE5D3;">attention-sink-playground</div>
+          </div>
+          <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #8A7E66;">model: gpt2 &middot; 124M &middot; eager attn &middot; cpu</div>
+        </div>
+        <div style="padding: 32px 28px 36px; display: flex; flex-direction: column; gap: 22px;">
+          <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px;">
+            <div style="font: 500 32px/1.12 'Newsreader', Georgia, serif; color: #F1EADA; letter-spacing: -0.01em; text-wrap: pretty;">Why do language models pour attention onto their <em style="color: #F2A33C;">first token</em>?</div>
+            <div style="font-size: 14.5px; line-height: 1.55; color: #9C9277;">An interactive probe of the attention-sink phenomenon &mdash; Barbero et al., COLM '25.</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; align-items: stretch;">
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="background: #1B1710; border: 1px solid #2E2718; border-radius: 5px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8A7E66;">prompt &middot; mo.ui.text_area</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                  <div style="font: 600 12.5px 'IBM Plex Mono', monospace; color: #1E1404; background: #F2A33C; border-radius: 4px; padding: 4px 8px;">{{ firstToken }}</div>
+                  <sc-for list="{{ restTokens }}" as="t" hint-placeholder-count="6">
+                    <div style="font: 500 12.5px 'IBM Plex Mono', monospace; color: #CBC1A6; background: #221D12; border: 1px solid #352D1A; border-radius: 4px; padding: 4px 8px;">{{ t }}</div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="background: #1B1710; border: 1px solid #2E2718; border-radius: 5px; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+                <div style="font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8A7E66;">mo.ui.slider &times;2</div>
+                <div style="display: flex; flex-direction: column; gap: 7px;">
+                  <div style="display: flex; justify-content: space-between; font: 500 11px 'IBM Plex Mono', monospace; color: #9C9277;"><span>layer</span><span style="color: #F2A33C;">9 / 12</span></div>
+                  <div style="position: relative; height: 4px; border-radius: 2px; background: #2E2718;">
+                    <div style="position: absolute; left: 0; top: 0; height: 4px; width: 72%; border-radius: 2px; background: #F2A33C;"></div>
+                    <div style="position: absolute; left: 72%; top: 50%; transform: translate(-50%, -50%); width: 13px; height: 13px; border-radius: 50%; background: #15120C; border: 2px solid #F2A33C;"></div>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 7px;">
+                  <div style="display: flex; justify-content: space-between; font: 500 11px 'IBM Plex Mono', monospace; color: #9C9277;"><span>head</span><span style="color: #F2A33C;">4 / 12</span></div>
+                  <div style="position: relative; height: 4px; border-radius: 2px; background: #2E2718;">
+                    <div style="position: absolute; left: 0; top: 0; height: 4px; width: 31%; border-radius: 2px; background: #F2A33C;"></div>
+                    <div style="position: absolute; left: 31%; top: 50%; transform: translate(-50%, -50%); width: 13px; height: 13px; border-radius: 50%; background: #15120C; border: 2px solid #F2A33C;"></div>
+                  </div>
+                </div>
+              </div>
+              <div style="background: #1B1710; border: 1px solid #2E2718; border-radius: 5px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; flex: 1; justify-content: center;">
+                <div style="font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8A7E66;">attention &rarr; token 0</div>
+                <div style="font: 600 44px/1 'Newsreader', Georgia, serif; color: #F2A33C; letter-spacing: -0.02em;">{{ sinkPct }}</div>
+                <div style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #6E6451;">layer 9 &middot; head 4 &middot; queries 1&hellip;n</div>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="background: #1B1710; border: 1px solid #2E2718; border-radius: 5px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8A7E66;">attention matrix &middot; altair</div>
+                {{ hm3 }}
+              </div>
+              <div style="background: #1B1710; border: 1px solid #2E2718; border-radius: 5px; padding: 14px 18px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8A7E66;">sink strength by layer</div>
+                {{ spark3 }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 22px; padding: 16px 12px 6px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #15120C;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">bg #15120C</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #ECE5D3; border: 1px solid #D8D2C4;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">text #ECE5D3</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #F2A33C;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">sink accent #F2A33C</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: linear-gradient(90deg, #221C11, #F2A33C, #FFD993);"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">heatmap ramp</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DIRECTION 04 — VIOLET LAB ============ -->
+  <div data-screen-label="Direction 04 — Violet Lab" style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <div style="font: 600 12px 'IBM Plex Mono', monospace; letter-spacing: 0.1em; color: #7C5CE0;">DIRECTION 04</div>
+      <div style="font: 500 22px 'Newsreader', Georgia, serif; color: #1E1B16;">Violet Lab</div>
+      <div style="font-size: 14px; color: #6E6A60;">dark poster &middot; violet sink &middot; the metric as the hero, oversized &middot; quietest chrome of the four</div>
+    </div>
+    <div style="background: #FFFFFF; border-radius: 14px; padding: 16px;">
+      <div style="background: #131119; border-radius: 10px; padding: 52px 56px 44px; display: flex; flex-direction: column; gap: 34px;">
+        <div style="display: flex; flex-direction: column; gap: 12px; max-width: 760px;">
+          <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #9D7BFF;">marimo notebook &middot; arXiv:2504.02732</div>
+          <div style="font: 500 52px/1.06 'Newsreader', Georgia, serif; color: #ECE9F4; letter-spacing: -0.015em; text-wrap: pretty;">Why do LLMs attend to the <em style="color: #9D7BFF;">first token</em>?</div>
+        </div>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 48px; align-items: start;">
+          <div style="display: flex; flex-direction: column; gap: 26px;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <div style="font: 600 110px/1 'Newsreader', Georgia, serif; color: #9D7BFF; letter-spacing: -0.03em;">{{ sinkPct }}</div>
+              <div style="font-size: 15px; line-height: 1.5; color: #8B86A0; max-width: 380px; text-wrap: pretty;">of this prompt's attention lands on a token that carries almost no meaning. The paper's answer: it's a learned release valve against over-mixing.</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <div style="font: 600 13px 'IBM Plex Mono', monospace; color: #14101F; background: #9D7BFF; border-radius: 6px; padding: 5px 10px;">{{ firstToken }}</div>
+                <sc-for list="{{ restTokens }}" as="t" hint-placeholder-count="6">
+                  <div style="font: 500 13px 'IBM Plex Mono', monospace; color: #B9B4CC; background: #1B1826; border: 1px solid #29243A; border-radius: 6px; padding: 5px 10px;">{{ t }}</div>
+                </sc-for>
+              </div>
+              <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #5F5A78;">gpt2 tokenizer &middot; token 0 = the sink</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="font: 600 10px 'IBM Plex Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #5F5A78;">sink strength by layer</div>
+              {{ spark4 }}
+            </div>
+          </div>
+          <div style="background: #181522; border: 1px solid #262138; border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #8B86A0;">layer 9 &middot; head 4</div>
+              <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #5F5A78;">altair</div>
+            </div>
+            {{ hm4 }}
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 22px; padding: 16px 12px 6px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #131119;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">bg #131119</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #ECE9F4; border: 1px solid #D8D2C4;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">text #ECE9F4</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: #9D7BFF;"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">sink accent #9D7BFF</span></div>
+        <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 16px; height: 16px; border-radius: 4px; background: linear-gradient(90deg, #191631, #46357F, #EBDFFF);"></div><span style="font: 500 11px 'IBM Plex Mono', monospace; color: #6E6A60;">heatmap ramp</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ NEXT STEPS ============ -->
+  <div data-screen-label="Next steps" style="background: #FFFFFF; border-radius: 14px; padding: 32px 40px; display: flex; flex-direction: column; gap: 12px;">
+    <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #8A857A;">Next steps</div>
+    <div style="font-size: 14.5px; line-height: 1.65; color: #3D3A33; max-width: 760px;">
+      <div>1.&ensp;Pick a direction &mdash; or mix (e.g. &ldquo;Direction 01's theme with 02's viridis heatmap&rdquo;, &ldquo;03's instrument panels in light mode&rdquo;).</div>
+      <div>2.&ensp;I build the full dynamic notebook: all 12 PRD sections &mdash; hook, tokens, attention, the sink, why (over-mixing), depth, the break-the-first-token experiment, over-mixing meter, GPU model-size comparison, so-what, appendix &mdash; with a working prompt box, presets, run button, and live layer/head scrubbing on simulated tensors.</div>
+      <div>3.&ensp;A design-tokens block ships inside that file for the Claude Code handoff.</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  get A() {
+    if (!this._A) this._A = this.buildAttention(7);
+    return this._A;
+  }
+
+  buildAttention(n) {
+    let seed = 42;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed % 1000) / 1000; };
+    const A = [];
+    for (let q = 0; q < n; q++) {
+      const row = new Array(n).fill(0);
+      if (q === 0) { row[0] = 1; A.push(row); continue; }
+      const sink = Math.min(0.30 + 0.035 * q + rnd() * 0.08, 0.62);
+      row[0] = sink;
+      const rest = 1 - sink;
+      const ws = [];
+      for (let k = 1; k <= q; k++) {
+        ws.push(rnd() * 0.25 + (k === q ? 0.7 : 0) + (k === q - 1 ? 0.45 : 0));
+      }
+      const s = ws.reduce((a, b) => a + b, 0);
+      for (let k = 1; k <= q; k++) row[k] = rest * ws[k - 1] / s;
+      A.push(row);
+    }
+    return A;
+  }
+
+  hexToRgb(h) {
+    return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  }
+
+  lerpRamp(stops, t) {
+    t = Math.max(0, Math.min(1, t));
+    const seg = (stops.length - 1) * t;
+    const i = Math.min(Math.floor(seg), stops.length - 2);
+    const f = seg - i;
+    const a = this.hexToRgb(stops[i]);
+    const b = this.hexToRgb(stops[i + 1]);
+    const c = a.map((x, j) => Math.round(x + (b[j] - x) * f));
+    return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+  }
+
+  heatmap(conf) {
+    const mk = React.createElement;
+    const A = this.A;
+    const n = A.length;
+    const cell = conf.cell;
+    const lab = {
+      fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 500,
+      color: conf.label, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      overflow: 'hidden', whiteSpace: 'nowrap'
+    };
+    const gridCols = '42px repeat(' + n + ', ' + cell + 'px)';
+    const rows = [];
+    const top = [mk('div', { key: 'corner' })];
+    conf.tokens.forEach((t, k) => top.push(mk('div', { key: 'k' + k, style: Object.assign({}, lab, { height: '14px' }) }, t)));
+    rows.push(mk('div', { key: 'top', style: { display: 'grid', gridTemplateColumns: gridCols, gap: '2px' } }, top));
+    A.forEach((row, q) => {
+      const r = [mk('div', { key: 'lab', style: Object.assign({}, lab, { justifyContent: 'flex-end', paddingRight: '6px' }) }, conf.tokens[q])];
+      row.forEach((v, k) => {
+        const masked = k > q;
+        r.push(mk('div', {
+          key: 'c' + k,
+          title: masked ? 'masked (future token)' : conf.tokens[q] + ' \u2192 ' + conf.tokens[k] + '  \u00B7  ' + v.toFixed(3),
+          style: {
+            width: cell + 'px', height: cell + 'px', borderRadius: '3px',
+            background: masked ? conf.masked : conf.color(v, q, k),
+            cursor: masked ? 'default' : 'crosshair'
+          }
+        }));
+      });
+      rows.push(mk('div', { key: 'r' + q, style: { display: 'grid', gridTemplateColumns: gridCols, gap: '2px' } }, r));
+    });
+    return mk('div', { style: { display: 'inline-flex', flexDirection: 'column', gap: '2px' } }, rows);
+  }
+
+  spark(conf) {
+    const mk = React.createElement;
+    const data = [0.07, 0.14, 0.26, 0.37, 0.44, 0.52, 0.55, 0.58, 0.61, 0.58, 0.62, 0.64];
+    const w = conf.w, h = conf.h, pad = 10;
+    const max = 0.74;
+    const pts = data.map((v, i) => [pad + i * (w - 2 * pad) / (data.length - 1), h - pad - (v / max) * (h - 2 * pad)]);
+    const last = pts[pts.length - 1];
+    return mk('svg', { width: w, height: h, style: { display: 'block' } },
+      mk('line', { x1: pad, y1: h - pad, x2: w - pad, y2: h - pad, stroke: conf.axis, strokeWidth: 1 }),
+      mk('polyline', {
+        points: pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '),
+        fill: 'none', stroke: conf.stroke, strokeWidth: 2, strokeLinejoin: 'round', strokeLinecap: 'round'
+      }),
+      mk('circle', { cx: last[0], cy: last[1], r: 3.5, fill: conf.stroke })
+    );
+  }
+
+  renderVals() {
+    const A = this.A;
+    const n = A.length;
+    let s = 0;
+    for (let q = 1; q < n; q++) s += A[q][0];
+    const sinkPct = (100 * s / (n - 1)).toFixed(1) + '%';
+    const toks = ['The', '\u00B7cat', '\u00B7sat', '\u00B7on', '\u00B7the', '\u00B7mat', '.'];
+    const sq = Math.sqrt;
+    const L = this.lerpRamp.bind(this);
+    const viridis = ['#440154', '#46327e', '#365c8d', '#277f8e', '#1fa187', '#4ac16d', '#a0da39', '#fde725'];
+    return {
+      firstToken: 'The',
+      restTokens: toks.slice(1),
+      sinkPct: sinkPct,
+      hm1: this.heatmap({
+        tokens: toks, cell: 24, label: '#9A9082', masked: '#F5F2EB',
+        color: (v, q, k) => k === 0 ? L(['#F7ECD9', '#B96E0F'], sq(v)) : L(['#EDEAE1', '#463C2B'], sq(v))
+      }),
+      hm2: this.heatmap({
+        tokens: toks, cell: 32, label: '#7A828D', masked: '#EFF2F5',
+        color: (v) => L(viridis, sq(v))
+      }),
+      hm3: this.heatmap({
+        tokens: toks, cell: 28, label: '#8A7E66', masked: '#1F1A12',
+        color: (v) => L(['#221C11', '#7A5318', '#F2A33C', '#FFD993'], sq(v))
+      }),
+      hm4: this.heatmap({
+        tokens: toks, cell: 28, label: '#807BA0', masked: '#1B1828',
+        color: (v) => L(['#191631', '#46357F', '#9D7BFF', '#EBDFFF'], sq(v))
+      }),
+      spark1: this.spark({ w: 296, h: 74, stroke: '#C98019', axis: '#E7E0CF' }),
+      spark2: this.spark({ w: 240, h: 96, stroke: '#2E6BDB', axis: '#E2E8F0' }),
+      spark3: this.spark({ w: 320, h: 76, stroke: '#F2A33C', axis: '#322A1C' }),
+      spark4: this.spark({ w: 360, h: 90, stroke: '#9D7BFF', axis: '#2B2740' })
+    };
+  }
+}
+</script>
+</body>
+</html>

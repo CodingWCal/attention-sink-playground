@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500;1,6..72,600&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #F8FAFC; font-family: 'Source Sans 3', 'Helvetica Neue', sans-serif; color: #14181F; -webkit-font-smoothing: antialiased; }
+    @media (max-width: 1320px) { #toc-rail { display: none; } }
+  </style>
+</helmet>
+
+<!-- ============ TOP BAR ============ -->
+<div data-screen-label="Top bar" style="position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,0.92); backdrop-filter: blur(8px); border-bottom: 1px solid #E2E8F0;">
+  <div style="max-width: 980px; margin: 0 auto; padding: 11px 32px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 8px; height: 8px; border-radius: 50%; background: #2E6BDB;"></div>
+      <div style="font: 600 12px 'IBM Plex Mono', monospace; letter-spacing: 0.05em; color: #14181F;">attention-sink-playground.py</div>
+      <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #94A0AD;">marimo &middot; molab</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #7A828D;">model: gpt2 &middot; 124M &middot; eager attn &middot; cpu</div>
+      <div style="font: 600 11px 'IBM Plex Mono', monospace; color: #2E8A5B;">&#9679; {{ statusText }}</div>
+    </div>
+  </div>
+</div>
+
+{{ tocEl }}
+
+<!-- ============ 1 · HERO ============ -->
+<div data-screen-label="01 Hero" style="border-bottom: 1px solid #E8EDF3; background-image: linear-gradient(#EEF2F7 1px, transparent 1px), linear-gradient(90deg, #EEF2F7 1px, transparent 1px); background-size: 28px 28px;">
+  <div style="max-width: 760px; margin: 0 auto; padding: 88px 32px 72px; display: flex; flex-direction: column; align-items: center; gap: 26px; text-align: center;">
+    <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.16em; text-transform: uppercase; color: #2E6BDB;">An interactive marimo notebook &middot; arXiv:2504.02732 &middot; COLM 2025</div>
+    <div style="font: 500 54px/1.07 'Newsreader', Georgia, serif; color: #14181F; letter-spacing: -0.015em; text-wrap: pretty;">Why do language models pour attention onto their <em style="color: #2E6BDB;">first token</em>?</div>
+    <div style="font-size: 18px; line-height: 1.55; color: #4E5663; max-width: 600px; text-wrap: pretty;">Every LLM has a strange habit: it dumps a huge share of attention onto a token that often means nothing. Type a sentence below, watch it happen live, then break it on purpose &mdash; and learn why it's a feature, not a bug.</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; width: 100%; max-width: 620px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; box-shadow: 0 1px 3px rgba(20,24,31,0.04);">
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 3px; border-right: 1px solid #EBF0F5;">
+        <div style="font: 600 28px 'Newsreader', Georgia, serif; color: #2E6BDB;">{{ heroPct }}</div>
+        <div style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #7A828D; letter-spacing: 0.03em;">avg attention &rarr; token 0</div>
+      </div>
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 3px; border-right: 1px solid #EBF0F5;">
+        <div style="font: 600 28px 'Newsreader', Georgia, serif; color: #14181F;">{{ heroPeak }}</div>
+        <div style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #7A828D; letter-spacing: 0.03em;">peak, deepest layers</div>
+      </div>
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 3px;">
+        <div style="font: 600 28px 'Newsreader', Georgia, serif; color: #14181F;">12&times;12</div>
+        <div style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #7A828D; letter-spacing: 0.03em;">layers &times; heads &middot; gpt2</div>
+      </div>
+      <div style="grid-column: 1 / -1; border-top: 1px solid #EBF0F5; padding: 10px 20px 12px; display: flex; align-items: center; gap: 14px;">
+        <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; white-space: nowrap;">sink by layer &rarr;</div>
+        <div style="flex: 1; min-width: 0;">{{ heroSparkEl }}</div>
+      </div>
+    </div>
+    <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #94A0AD;">Barbero, Arroyo, Gu, Perivolaropoulos, Veli&#269;kovi&#263;, Pascanu &amp; Bronstein &middot; scroll &darr;</div>
+  </div>
+</div>
+
+<div style="max-width: 880px; margin: 0 auto; padding: 0 32px; display: flex; flex-direction: column;">
+
+  <!-- ============ 2 · SETUP (quiet) ============ -->
+  <div data-screen-label="02 Setup" style="padding: 28px 0 0;">
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
+      <div onClick="{{ toggleSetup }}" style="display: flex; align-items: center; gap: 10px; padding: 11px 16px; cursor: pointer;" style-hover="background: #F8FAFC;">
+        <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #7A828D;">{{ setupChevron }}</div>
+        <div style="font: 500 12px 'IBM Plex Mono', monospace; color: #4E5663;">setup &mdash; imports, device, cached model load</div>
+        <div style="margin-left: auto; font: 500 10px 'IBM Plex Mono', monospace; color: #94A0AD; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">cell A &middot; @mo.cache &middot; runs once</div>
+      </div>
+      <sc-if value="{{ setupOpen }}" hint-placeholder-val="{{ false }}">
+        <pre style="margin: 0; border-top: 1px solid #EBF0F5; background: #FBFCFE; padding: 16px 20px; font: 400 12.5px/1.65 'IBM Plex Mono', monospace; color: #3D4651; overflow-x: auto;">import marimo as mo
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+tok = AutoTokenizer.from_pretrained("gpt2")
+model = AutoModelForCausalLM.from_pretrained(
+    "gpt2",
+    attn_implementation="eager",   # REQUIRED &mdash; SDPA/Flash return None attentions
+    torch_dtype=torch.bfloat16 if device == "cuda" else torch.float32,
+).to(device).eval()</pre>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- ============ 3 · WHAT IS A TOKEN ============ -->
+  <div id="s-token" data-screen-label="03 What is a token" style="padding: 72px 0 0; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px;">
+      <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #2E6BDB;">01 &middot; TOKENS</div>
+      <div style="font: 500 30px/1.15 'Newsreader', Georgia, serif; color: #14181F;">First, what is a token?</div>
+      <div style="font-size: 16px; line-height: 1.6; color: #4E5663; text-wrap: pretty;">A model never sees your sentence as letters or words. It chops the text into <strong style="color: #14181F;">tokens</strong> &mdash; sometimes a whole word, sometimes a piece of one, sometimes just a punctuation mark. Here is the current prompt, exactly as the model sees it:</div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">mo.Html &middot; token strip</div>
+        <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #94A0AD;">{{ tokenNote }}</div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+        <div style="font: 600 13px 'IBM Plex Mono', monospace; color: #FFFFFF; background: #2E6BDB; border: 1px solid #2E6BDB; border-radius: 6px; padding: 5px 10px;">{{ firstTokenDisp }}</div>
+        <sc-for list="{{ restChips }}" as="t" hint-placeholder-count="8">
+          <div style="font: 500 13px 'IBM Plex Mono', monospace; color: #303843; background: {{ t.bg }}; border: 1px solid #D9E0E9; border-radius: 6px; padding: 5px 10px;">{{ t.text }}</div>
+        </sc-for>
+      </div>
+      <div style="font-size: 12.5px; color: #7A828D;">blue = token 0 &middot; <span style="font: 500 12px 'IBM Plex Mono', monospace;">&middot;</span> marks a leading space &middot; chips tinted by attention received at the selected layer</div>
+    </div>
+    <div style="background: #EFF4FC; border: 1px solid #D6E2F5; border-radius: 8px; padding: 16px 20px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #5B7DBE;">mo.callout(kind="info")</div>
+      <div style="font-size: 15px; line-height: 1.55; color: #2B3A52;"><strong>The &ldquo;first token&rdquo; is not the first letter.</strong> It's the first <em>chunk</em> the tokenizer produces. GPT-2 doesn't prepend a special start marker, so token 0 is simply the first real piece of your prompt. Models like Llama or Gemma add a special <span style="font: 500 13px 'IBM Plex Mono', monospace;">&lt;bos&gt;</span> token in front &mdash; a difference this paper cares about.</div>
+    </div>
+  </div>
+
+  <!-- ============ 4 · WHAT IS ATTENTION + PLAYGROUND ============ -->
+  <div id="s-attn" data-screen-label="04 Playground" style="padding: 72px 0 0; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px;">
+      <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #2E6BDB;">02 &middot; ATTENTION</div>
+      <div style="font: 500 30px/1.15 'Newsreader', Georgia, serif; color: #14181F;">Each token decides whom to listen to</div>
+      <div style="font-size: 16px; line-height: 1.6; color: #4E5663; text-wrap: pretty;">Attention is the only way tokens share information. At every layer, each token (a <strong style="color: #14181F;">row</strong>) spreads 100% of its &ldquo;listening budget&rdquo; across the tokens before it (the <strong style="color: #14181F;">columns</strong>). Brighter = more attention. Try your own prompt &mdash; then look at the first column.</div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px; display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 24px;">
+      <!-- controls -->
+      <div style="display: flex; flex-direction: column; gap: 16px; border-right: 1px solid #EBF0F5; padding-right: 24px;">
+        <div style="display: flex; flex-direction: column; gap: 7px;">
+          <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; align-self: flex-start; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">mo.ui.dropdown &middot; presets</div>
+          <select value="{{ presetKey }}" onChange="{{ onPresetChange }}" style="font: 500 13px 'IBM Plex Mono', monospace; color: #14181F; background: #F8FAFC; border: 1px solid #D9E0E9; border-radius: 6px; padding: 8px 10px; outline: none; cursor: pointer;">
+            <option value="baseline">Baseline sentence</option>
+            <option value="repeat">Repeated phrase</option>
+            <option value="short">Very short prompt</option>
+            <option value="long">Long prompt</option>
+            <option value="punct">Starts with punctuation</option>
+            <option value="prefix">Repeated prefix token</option>
+            <option value="custom">Custom&hellip;</option>
+          </select>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 7px;">
+          <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; align-self: flex-start; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">mo.ui.text_area &middot; prompt</div>
+          <textarea value="{{ promptDraft }}" onChange="{{ onPromptChange }}" rows="3" spellcheck="false" style="font: 500 13px/1.5 'IBM Plex Mono', monospace; color: #14181F; background: #FFFFFF; border: 1px solid #D9E0E9; border-radius: 6px; padding: 10px 12px; resize: vertical; outline: none;" style-focus="border: 1px solid #2E6BDB; box-shadow: 0 0 0 3px rgba(46,107,219,0.12);"></textarea>
+          <sc-if value="{{ stale }}" hint-placeholder-val="{{ false }}">
+            <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #A05E0C; background: #FCF3E3; border: 1px solid #F0DCB4; border-radius: 5px; padding: 5px 9px;">edited &mdash; press Run to re-run inference</div>
+          </sc-if>
+        </div>
+        <button onClick="{{ runInference }}" style="font: 600 14px 'Source Sans 3', sans-serif; color: #FFFFFF; background: #2E6BDB; border: none; border-radius: 7px; padding: 11px 16px; cursor: pointer; letter-spacing: 0.01em;" style-hover="background: #2558BA;" style-active="background: #1D4FA8;">{{ runLabel }}</button>
+        <div style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #94A0AD; line-height: 1.6;">mo.ui.run_button gates inference.<br>Sliders below never re-run the model &mdash; they index into cached tensors.</div>
+        <div style="display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #EBF0F5; padding-top: 16px;">
+          <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; align-self: flex-start; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">mo.ui.slider &times;2 &middot; cheap, reactive</div>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; justify-content: space-between; font: 500 11.5px 'IBM Plex Mono', monospace; color: #4E5663;"><span>layer</span><span style="color: #2E6BDB; font-weight: 600;">{{ layerDisplay }} / 12</span></div>
+            <input type="range" min="1" max="12" step="1" value="{{ layerDisplay }}" onChange="{{ onLayerChange }}" style="width: 100%; accent-color: #2E6BDB; cursor: pointer;">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; justify-content: space-between; font: 500 11.5px 'IBM Plex Mono', monospace; color: #4E5663;"><span>head</span><span style="color: #2E6BDB; font-weight: 600;">{{ headDisplay }} / 12</span></div>
+            <input type="range" min="1" max="12" step="1" value="{{ headDisplay }}" onChange="{{ onHeadChange }}" style="width: 100%; accent-color: #2E6BDB; cursor: pointer;">
+            <div style="font: 600 10.5px 'IBM Plex Mono', monospace; color: #2E6BDB;">{{ headPersona }}</div>
+            <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #94A0AD;">try heads 2, 6, 10 &mdash; local heads barely sink</div>
+          </div>
+        </div>
+      </div>
+      <!-- heatmap -->
+      <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">altair &middot; viridis &middot; attention matrix</div>
+          <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #4E5663;">layer {{ layerDisplay }} &middot; head {{ headDisplay }}</div>
+        </div>
+        <div style="overflow-x: auto;">{{ heatmapEl }}</div>
+        <div style="font: 500 11.5px 'IBM Plex Mono', monospace; color: #5A6470; background: #F8FAFC; border: 1px solid #EBF0F5; border-radius: 6px; padding: 8px 12px; min-height: 18px;">{{ hoverText }}</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="font: 500 9.5px 'IBM Plex Mono', monospace; color: #94A0AD;">0.0</div>
+          <div style="height: 8px; flex: 1; max-width: 180px; border-radius: 4px; background: linear-gradient(90deg, #440154, #365c8d, #1fa187, #a0da39, #fde725);"></div>
+          <div style="font: 500 9.5px 'IBM Plex Mono', monospace; color: #94A0AD;">1.0 &middot; &radic;-scaled</div>
+          <div style="width: 10px; height: 10px; border-radius: 2px; background: #EFF2F5; margin-left: 12px;"></div>
+          <div style="font: 500 9.5px 'IBM Plex Mono', monospace; color: #94A0AD;">masked (future)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 5 · THERE'S A SINK ============ -->
+  <div id="s-sink" data-screen-label="05 The sink" style="padding: 72px 0 0; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px;">
+      <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #2E6BDB;">03 &middot; THE SINK</div>
+      <div style="font: 500 30px/1.15 'Newsreader', Georgia, serif; color: #14181F;">That bright first column has a name</div>
+      <div style="font-size: 16px; line-height: 1.6; color: #4E5663; text-wrap: pretty;">Sum up how much attention each token <em>receives</em> and the spike is undeniable. This is an <strong style="color: #2E6BDB;">attention sink</strong>: a large share of everyone's listening budget lands on token 0 &mdash; no matter what that token says.</div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px; display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 24px; align-items: stretch;">
+      <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+        <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; align-self: flex-start; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">altair &middot; attention received per token</div>
+        <div style="overflow-x: auto;">{{ barsEl }}</div>
+        <div style="font-size: 12px; color: #94A0AD;">each bar: mean attention a token receives, averaged over the query positions allowed to see it &middot; trivial query row 0 excluded</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px; border-left: 1px solid #EBF0F5; padding-left: 24px; justify-content: center;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D;">mo.stat &middot; this head</div>
+          <div style="font: 600 46px/1 'Newsreader', Georgia, serif; color: #2E6BDB; letter-spacing: -0.02em;">{{ sinkPctHead }}</div>
+          <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #7A828D;">attention &rarr; token 0<br>layer {{ layerDisplay }} &middot; head {{ headDisplay }}</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px; border-top: 1px solid #EBF0F5; padding-top: 14px;">
+          <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D;">all heads, this layer</div>
+          <div style="font: 600 28px/1 'Newsreader', Georgia, serif; color: #14181F;">{{ sinkPctLayer }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 6 · WHY ============ -->
+  <div id="s-why" data-screen-label="06 Why" style="padding: 72px 0 0; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px;">
+      <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #2E6BDB;">04 &middot; WHY</div>
+      <div style="font: 500 30px/1.15 'Newsreader', Georgia, serif; color: #14181F;">Why would a model waste attention on purpose?</div>
+      <div style="font-size: 16px; line-height: 1.6; color: #4E5663; text-wrap: pretty;">Attention is the only channel tokens have for mixing information. Stack 12, 48, 126 layers and feed in a long context, and tokens mix with each other over and over. Past a point, every token's representation starts to look like every other token's &mdash; researchers call it <strong style="color: #14181F;">over-mixing</strong> (or rank collapse). The signal turns to mush.</div>
+    </div>
+    <div style="background: #EFF4FC; border: 1px solid #D6E2F5; border-radius: 8px; padding: 18px 22px; display: flex; flex-direction: column; gap: 6px; max-width: 680px;">
+      <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #5B7DBE;">mo.callout(kind="info") &middot; the classroom analogy</div>
+      <div style="font-size: 15px; line-height: 1.6; color: #2B3A52;">Imagine a classroom where, every few minutes, everyone copies a bit from their neighbors' notes. A little copying fills gaps. Too many rounds, and every notebook becomes the same blurry soup. The model's trick: when a head has nothing useful to copy, it <em>doodles in the margin instead</em> &mdash; it parks its attention on token 0, a near-empty spot where attending is almost a no-op. <strong>The sink is a release valve against over-mixing.</strong> That's the paper's answer.</div>
+    </div>
+  </div>
+
+  <!-- ============ 7 · GROWS WITH DEPTH ============ -->
+  <div id="s-depth" data-screen-label="07 Depth" style="padding: 72px 0 0; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px;">
+      <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #2E6BDB;">05 &middot; DEPTH</div>
+      <div style="font: 500 30px/1.15 'Newsreader', Georgia, serif; color: #14181F;">The sink grows with depth</div>
+      <div style="font-size: 16px; line-height: 1.6; color: #4E5663; text-wrap: pretty;">If sinks defend against over-mixing, deeper layers &mdash; where mixing has compounded &mdash; should lean on them harder. They do. Click a point (or drag the slider) and watch the heatmap above follow along: <em>no re-inference, just indexing into cached tensors.</em></div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">altair &middot; mean attention &rarr; token 0, by layer (all heads)</div>
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 220px;">
+          <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #4E5663; white-space: nowrap;">layer <span style="color: #2E6BDB; font-weight: 600;">{{ layerDisplay }}</span></div>
+          <input type="range" min="1" max="12" step="1" value="{{ layerDisplay }}" onChange="{{ onLayerChange }}" style="flex: 1; accent-color: #2E6BDB; cursor: pointer;">
+        </div>
+      </div>
+      {{ layerChartEl }}
+      <div style="font-size: 12px; color: #94A0AD;">selected layer marked &middot; points are clickable &middot; gpt2's final-layer dip is real &mdash; last layers do output work</div>
+    </div>
+  </div>
+
+  <!-- ============ 8 · EXPERIMENT ============ -->
+  <div id="s-exp" data-screen-label="08 Experiment" style="padding: 72px 0 0; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px;">
+      <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #2E6BDB;">06 &middot; EXPERIMENT</div>
+      <div style="font: 500 30px/1.15 'Newsreader', Georgia, serif; color: #14181F;">What happens if we break the first token?</div>
+      <div style="font-size: 16px; line-height: 1.6; color: #4E5663; text-wrap: pretty;">Don't take the paper's word for it &mdash; generate your own evidence. We run the model on seven prompt variants and compare how much attention the first token soaks up (deep layers, all heads). If the sink is about <em>position</em>, swapping the first token for nonsense or punctuation should barely matter. If it's about over-mixing pressure, longer prompts should sink harder.</div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">mo.ui.run_button &middot; batched variants &middot; altair</div>
+        <button onClick="{{ runExperiment }}" style="font: 600 13.5px 'Source Sans 3', sans-serif; color: #FFFFFF; background: #2E6BDB; border: none; border-radius: 7px; padding: 9px 16px; cursor: pointer;" style-hover="background: #2558BA;">{{ expLabel }}</button>
+      </div>
+      <sc-if value="{{ expRan }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          {{ expBarsEl }}
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; font-size: 13px; line-height: 1.5; color: #4E5663; border-top: 1px solid #EBF0F5; padding-top: 14px;">
+            <div><strong style="color: #14181F;">Nonsense or punctuation first:</strong> the sink barely moves. It's the <em>position</em>, not the meaning.</div>
+            <div><strong style="color: #14181F;">Longer prompt:</strong> more mixing pressure, stronger sink &mdash; just as the theory predicts.</div>
+            <div><strong style="color: #14181F;">Heavy repetition:</strong> heads have real copying work to do, so less attention is parked on the sink.</div>
+            <div><strong style="color: #14181F;">Very short prompt:</strong> little mixing to defend against &mdash; the release valve stays mostly closed.</div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ expNotRan }}" hint-placeholder-val="{{ true }}">
+        <div style="border: 1.5px dashed #D9E0E9; border-radius: 8px; padding: 36px 20px; text-align: center; font: 500 12.5px 'IBM Plex Mono', monospace; color: #94A0AD;">7 variants &times; 12 layers &times; 12 heads &mdash; press run to batch them</div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- ============ 9 · OVER-MIXING METER (STRETCH) ============ -->
+  <div id="s-collapse" data-screen-label="09 Over-mixing meter" style="padding: 72px 0 0; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #2E6BDB;">07 &middot; THE COLLAPSE</div>
+        <div style="font: 600 9.5px 'IBM Plex Mono', monospace; letter-spacing: 0.08em; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 6px; background: #FFFFFF;">STRETCH</div>
+      </div>
+      <div style="font: 500 30px/1.15 'Newsreader', Georgia, serif; color: #14181F;">Feel the collapse the sink is preventing</div>
+      <div style="font-size: 16px; line-height: 1.6; color: #4E5663; text-wrap: pretty;">From the hidden states we can measure over-mixing directly: the average pairwise <strong style="color: #14181F;">cosine similarity</strong> between token representations at each layer. Higher = more blur. Watch it climb with depth &mdash; and how much steeper it would climb if the sink's attention were forced back onto real tokens.</div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">altair &middot; hidden-state similarity vs sink strength</div>
+        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 18px; height: 3px; border-radius: 2px; background: #2E6BDB;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">sink strength</span></div>
+          <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 18px; height: 3px; border-radius: 2px; background: #3D4651;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">token similarity</span></div>
+          <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 18px; height: 0; border-top: 3px dashed #B2BCC8;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">similarity, sink redistributed</span></div>
+        </div>
+      </div>
+      {{ overmixChartEl }}
+      <div style="background: #FCF6E9; border: 1px solid #EFDCAE; border-radius: 8px; padding: 12px 16px; font-size: 13px; line-height: 1.55; color: #6B5320;"><span style="font: 500 10px 'IBM Plex Mono', monospace;">mo.callout(kind="warn")</span> &nbsp;Honest framing: this meter is an <strong>illustration consistent with the paper's argument</strong>, not a reproduction of its formal Jacobian-norm results. The dashed counterfactual is simulated.</div>
+    </div>
+  </div>
+
+  <!-- ============ 10 · SCALE IT UP (STRETCH, GPU) ============ -->
+  <div id="s-scale" data-screen-label="10 Model size" style="padding: 72px 0 0; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #2E6BDB;">08 &middot; SCALE</div>
+        <div style="font: 600 9.5px 'IBM Plex Mono', monospace; letter-spacing: 0.08em; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 6px; background: #FFFFFF;">STRETCH &middot; GPU</div>
+      </div>
+      <div style="font: 500 30px/1.15 'Newsreader', Georgia, serif; color: #14181F;">Bigger and deeper models sink harder</div>
+      <div style="font-size: 16px; line-height: 1.6; color: #4E5663; text-wrap: pretty;">The paper's most striking finding: in Llama 3.1 405B, the large majority of heads are strong sinks. We approximate it across the GPT-2 family &mdash; four models, one molab GPU, sink curves normalized to relative depth so different depths line up.</div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #7A828D; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 7px; background: #F8FAFC;">altair &middot; sink strength vs relative depth</div>
+        <div style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #2E8A5B;">&#9679; ran on molab GPU &middot; RTX Pro 6000 (CoreWeave) &middot; bfloat16</div>
+      </div>
+      <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 18px; height: 3px; border-radius: 2px; background: #B9CDEE;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">distilgpt2 &middot; 6L &middot; 82M</span></div>
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 18px; height: 3px; border-radius: 2px; background: #7FA3E3;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">gpt2 &middot; 12L &middot; 124M</span></div>
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 18px; height: 3px; border-radius: 2px; background: #3D74D6;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">gpt2-large &middot; 36L &middot; 774M</span></div>
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 18px; height: 3px; border-radius: 2px; background: #1D4FA8;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">gpt2-xl &middot; 48L &middot; 1.5B</span></div>
+      </div>
+      {{ scaleChartEl }}
+      <div style="font-size: 12px; color: #94A0AD;">same family, so curves are comparable &middot; cross-family comparisons would not be apples-to-apples</div>
+    </div>
+  </div>
+
+  <!-- ============ 11 · SO WHAT ============ -->
+  <div id="s-sowhat" data-screen-label="11 So what" style="padding: 72px 0 0; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px;">
+      <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #2E6BDB;">09 &middot; SO WHAT</div>
+      <div style="font: 500 30px/1.15 'Newsreader', Georgia, serif; color: #14181F;">The sink is not a bug. It's a defense.</div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+      <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px 22px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font: 600 13px 'IBM Plex Mono', monospace; color: #2E6BDB;">01</div>
+        <div style="font-size: 14.5px; line-height: 1.55; color: #303843;"><strong>Sinks are learned, useful structure.</strong> Attention parked on token 0 is a near no-op that keeps token representations distinct as depth and context grow.</div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px 22px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font: 600 13px 'IBM Plex Mono', monospace; color: #2E6BDB;">02</div>
+        <div style="font-size: 14.5px; line-height: 1.55; color: #303843;"><strong>It's about position, mostly.</strong> Replace the first token with nonsense and the sink stays. But training choices (a fixed &lt;bos&gt;) matter too &mdash; remove one a model relied on and quality drops.</div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px 22px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font: 600 13px 'IBM Plex Mono', monospace; color: #2E6BDB;">03</div>
+        <div style="font-size: 14.5px; line-height: 1.55; color: #303843;"><strong>&ldquo;Boring&rdquo; patterns repay attention.</strong> A behavior people tried to delete turned out to be load-bearing. That's why interpretability matters.</div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <a href="https://arxiv.org/abs/2504.02732" target="_blank" style="font: 600 13px 'IBM Plex Mono', monospace; color: #2E6BDB; background: #EFF4FC; border: 1px solid #D6E2F5; border-radius: 7px; padding: 9px 14px; text-decoration: none;" style-hover="background: #E2ECFA;">read the paper &rarr; arXiv:2504.02732</a>
+      <div style="font: 600 13px 'IBM Plex Mono', monospace; color: #4E5663; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 7px; padding: 9px 14px;">github.com/&hellip;/attention-sink-playground</div>
+    </div>
+  </div>
+
+  <!-- ============ 12 · APPENDIX ============ -->
+  <div data-screen-label="12 Appendix" style="padding: 72px 0 96px; display: flex; flex-direction: column; gap: 18px;">
+    <div style="border-top: 1px solid #E2E8F0; padding-top: 28px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="font: 600 11px 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: #94A0AD;">APPENDIX</div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start;">
+      <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="font: 600 12px 'IBM Plex Mono', monospace; color: #14181F;">Models (ungated, attention-exposing)</div>
+        <div style="font: 400 12px/1.9 'IBM Plex Mono', monospace; color: #4E5663;">distilgpt2 &middot; 82M &middot; 6L &middot; cpu default<br>gpt2 &middot; 124M &middot; 12L &middot; cpu default<br>gpt2-large &middot; 774M &middot; 36L &middot; gpu<br>gpt2-xl &middot; 1.5B &middot; 48L &middot; gpu<br>EleutherAI/pythia-410m &middot; optional</div>
+        <div style="font-size: 12.5px; line-height: 1.55; color: #7A828D;">Llama / Gemma are discussed but not loaded &mdash; gated models break a live demo.</div>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="font: 600 12px 'IBM Plex Mono', monospace; color: #14181F;">Reproduction notes</div>
+        <div style="font-size: 13px; line-height: 1.65; color: #4E5663;">&bull;&ensp;Load with <span style="font: 500 12px 'IBM Plex Mono', monospace;">attn_implementation="eager"</span> or attentions come back <span style="font: 500 12px 'IBM Plex Mono', monospace;">None</span>.<br>&bull;&ensp;Exclude query row 0 from sink summaries (causal mask makes it trivially 100%).<br>&bull;&ensp;Gate inference behind <span style="font: 500 12px 'IBM Plex Mono', monospace;">mo.ui.run_button</span>; sliders only index cached tensors.<br>&bull;&ensp;Pin deps via PEP 723 inline metadata in notebook.py.<br>&bull;&ensp;This mockup simulates tensors with a word-level tokenizer; the notebook uses real GPT-2 BPE.</div>
+      </div>
+    </div>
+    <!-- design tokens for Claude Code -->
+    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font: 600 12px 'IBM Plex Mono', monospace; color: #14181F;">Design tokens &mdash; for the Claude Code build</div>
+        <div style="font: 500 10px 'IBM Plex Mono', monospace; color: #94A0AD;">carry into notebook CSS + altair theme</div>
+      </div>
+      <div style="display: flex; gap: 18px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #F8FAFC; border: 1px solid #D9E0E9;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">page #F8FAFC</span></div>
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #FFFFFF; border: 1px solid #D9E0E9;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">surface #FFFFFF</span></div>
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #E2E8F0;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">border #E2E8F0</span></div>
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #14181F;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">ink #14181F</span></div>
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #4E5663;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">body #4E5663</span></div>
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #2E6BDB;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">sink accent #2E6BDB</span></div>
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: #C3CFDD;"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">bar neutral #C3CFDD</span></div>
+        <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 15px; height: 15px; border-radius: 4px; background: linear-gradient(90deg, #440154, #277f8e, #fde725);"></div><span style="font: 500 10.5px 'IBM Plex Mono', monospace; color: #4E5663;">viridis ramp</span></div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; font-size: 13px; line-height: 1.65; color: #4E5663; border-top: 1px solid #EBF0F5; padding-top: 14px;">
+        <div><strong style="color: #14181F;">Type.</strong> Newsreader 500 for headings (54/30/28); Source Sans 3 400/600 for body at 16/1.6; IBM Plex Mono 500 for tokens, tags, axis labels (9&ndash;13px).</div>
+        <div><strong style="color: #14181F;">Rules.</strong> The accent is used <em>only</em> for the sink (token-0 chip, first column/bar, sink curves, headline stat). Heatmap = viridis, &radic;-scaled, masked cells #EFF2F5. Panels: radius 8&ndash;10, 1px #E2E8F0. Section rhythm: 72px.</div>
+        <div><strong style="color: #14181F;">mo.ui mapping.</strong> presets &rarr; mo.ui.dropdown(dict) &middot; prompt &rarr; mo.ui.text_area &middot; gate &rarr; mo.ui.run_button &middot; layer/head &rarr; mo.ui.slider(1, n) &middot; headline &rarr; mo.stat &middot; notes &rarr; mo.callout.</div>
+        <div><strong style="color: #14181F;">Charts.</strong> All altair, tooltips on; cap displayed tokens at 14 with a &ldquo;showing first 14 of N&rdquo; note; grouped experiment chart uses accent for baseline, #7FA3E3 for variants, baseline tick overlaid.</div>
+      </div>
+    </div>
+    <div style="font: 500 11px 'IBM Plex Mono', monospace; color: #94A0AD; text-align: center; padding-top: 8px;">paper: Barbero et al., COLM 2025 &middot; built for the alphaXiv &times; marimo molab competition #2 &middot; MIT license</div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    presetKey: 'baseline',
+    promptDraft: 'The cat sat on the mat because it was warm.',
+    prompt: 'The cat sat on the mat because it was warm.',
+    layer: 8, head: 3,
+    running: false,
+    hover: null,
+    expRan: false, expRunning: false,
+    setupOpen: false,
+    activeSec: 's-token'
+  };
+
+  componentDidMount() {
+    this._onScroll = () => {
+      const ids = ['s-token', 's-attn', 's-sink', 's-why', 's-depth', 's-exp', 's-collapse', 's-scale', 's-sowhat'];
+      let active = ids[0];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top < 180) active = id;
+      }
+      if (active !== this.state.activeSec) this.setState({ activeSec: active });
+    };
+    window.addEventListener('scroll', this._onScroll, { passive: true });
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this._onScroll);
+  }
+
+  get presets() {
+    return [
+      { key: 'baseline', text: 'The cat sat on the mat because it was warm.' },
+      { key: 'repeat', text: 'the cat the cat the cat the cat the cat' },
+      { key: 'short', text: 'Hi there!' },
+      { key: 'long', text: 'In the beginning the model reads every word of the prompt and quietly decides which of its many neighbors each token should listen to next.' },
+      { key: 'punct', text: '? That question mark is doing more work than you think.' },
+      { key: 'prefix', text: 'very very very very different things happen here' }
+    ];
+  }
+
+  hash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h; }
+  rng(seed) { let s = (seed >>> 0) || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+
+  tokensFor(text) {
+    this._tokCache = this._tokCache || {};
+    if (this._tokCache[text]) return this._tokCache[text];
+    const toks = [];
+    const re = /[A-Za-z0-9']+|[^A-Za-z0-9'\s]/g;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const lead = m.index > 0 && /\s/.test(text[m.index - 1]);
+      const w = m[0];
+      if (/[A-Za-z]/.test(w) && w.length > 9) {
+        const cut = Math.ceil(w.length * 0.55);
+        toks.push({ text: w.slice(0, cut), lead: lead });
+        toks.push({ text: w.slice(cut), lead: false });
+      } else {
+        toks.push({ text: w, lead: lead });
+      }
+    }
+    this._tokCache[text] = toks;
+    return toks;
+  }
+
+  disp(t) { return (t.lead ? '\u00B7' : '') + t.text; }
+
+  features(toks) {
+    const n = toks.length;
+    const lenF = Math.max(-0.07, Math.min(0.10, (n - 9) * 0.007));
+    const words = toks.map(t => t.text.toLowerCase());
+    const uniq = new Set(words).size / Math.max(1, n);
+    return { lenF: lenF, repF: (1 - uniq) * 0.24 };
+  }
+
+  matrixFor(text, layer, head) {
+    this._mCache = this._mCache || {};
+    const key = text + '|' + layer + '|' + head;
+    if (this._mCache[key]) return this._mCache[key];
+    const toks = this.tokensFor(text);
+    const n = Math.max(1, Math.min(toks.length, 14));
+    const f = this.features(toks);
+    const r = this.rng(this.hash(text) + layer * 1299721 + head * 7919);
+    const headM = [1.3, 0.45, 1.0, 0.75][head % 4];
+    const base = (0.07 + 0.58 * Math.pow(layer / 11, 0.8)) * headM + f.lenF - f.repF;
+    const dip = layer === 11 ? 0.85 : 1;
+    const A = [];
+    for (let q = 0; q < n; q++) {
+      const row = new Array(n).fill(0);
+      if (q === 0) { row[0] = 1; A.push(row); continue; }
+      const sink = Math.max(0.02, Math.min(0.88, base * dip + (r() - 0.5) * 0.12 + 0.04 * Math.min(q / n, 0.5)));
+      row[0] = sink;
+      const rest = 1 - sink;
+      const local = head % 4 === 1 ? 1.6 : 0.6;
+      const ws = [];
+      for (let k = 1; k <= q; k++) {
+        ws.push(r() * 0.3 + (k === q ? 0.55 : 0) + (k === q - 1 ? local : 0) + (k === q - 2 ? local * 0.35 : 0));
+      }
+      const s = ws.reduce((a, b) => a + b, 0) || 1;
+      for (let k = 1; k <= q; k++) row[k] = rest * ws[k - 1] / s;
+      A.push(row);
+    }
+    this._mCache[key] = A;
+    return A;
+  }
+
+  sinkAvg(A) {
+    const n = A.length;
+    if (n < 2) return 1;
+    let s = 0;
+    for (let q = 1; q < n; q++) s += A[q][0];
+    return s / (n - 1);
+  }
+
+  layerCurveFor(text) {
+    this._lcCache = this._lcCache || {};
+    if (this._lcCache[text]) return this._lcCache[text];
+    const out = [];
+    for (let L = 0; L < 12; L++) {
+      let s = 0;
+      for (let h = 0; h < 12; h++) s += this.sinkAvg(this.matrixFor(text, L, h));
+      out.push(s / 12);
+    }
+    this._lcCache[text] = out;
+    return out;
+  }
+
+  receivedFor(A) {
+    const n = A.length;
+    const out = [];
+    for (let k = 0; k < n; k++) {
+      let s = 0, c = 0;
+      for (let q = Math.max(k, 1); q < n; q++) { s += A[q][k]; c++; }
+      out.push(c ? s / c : 0);
+    }
+    return out;
+  }
+
+  hexToRgb(h) { return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); }
+  lerpRamp(stops, t) {
+    t = Math.max(0, Math.min(1, t));
+    const seg = (stops.length - 1) * t;
+    const i = Math.min(Math.floor(seg), stops.length - 2);
+    const f = seg - i;
+    const a = this.hexToRgb(stops[i]);
+    const b = this.hexToRgb(stops[i + 1]);
+    const c = a.map((x, j) => Math.round(x + (b[j] - x) * f));
+    return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+  }
+
+  heatmapEl(A, toks) {
+    const mk = React.createElement;
+    const n = A.length;
+    const cell = n <= 8 ? 34 : (n <= 11 ? 30 : 26);
+    const viridis = ['#440154', '#46327e', '#365c8d', '#277f8e', '#1fa187', '#4ac16d', '#a0da39', '#fde725'];
+    const hov = this.state.hover;
+    const lab = {
+      fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 500, color: '#7A828D',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', whiteSpace: 'nowrap'
+    };
+    const gridCols = '46px repeat(' + n + ', ' + cell + 'px)';
+    const rows = [];
+    const top = [mk('div', { key: 'corner' })];
+    for (let k = 0; k < n; k++) top.push(mk('div', { key: 'k' + k, style: Object.assign({}, lab, { height: '15px', color: k === 0 ? '#2E6BDB' : '#7A828D', fontWeight: k === 0 ? 600 : 500 }) }, this.disp(toks[k])));
+    rows.push(mk('div', { key: 'top', style: { display: 'grid', gridTemplateColumns: gridCols, gap: '2px' } }, top));
+    A.forEach((row, q) => {
+      const r = [mk('div', { key: 'lab', style: Object.assign({}, lab, { justifyContent: 'flex-end', paddingRight: '7px' }) }, this.disp(toks[q]))];
+      row.forEach((v, k) => {
+        const masked = k > q;
+        const isHov = hov && hov.q === q && hov.k === k;
+        r.push(mk('div', {
+          key: 'c' + k,
+          onMouseEnter: masked ? null : () => this.setState({ hover: { q: q, k: k, v: v } }),
+          style: {
+            width: cell + 'px', height: cell + 'px', borderRadius: '3px',
+            background: masked ? '#EFF2F5' : this.lerpRamp(viridis, Math.sqrt(v)),
+            boxShadow: isHov ? 'inset 0 0 0 2px #14181F' : 'none',
+            cursor: masked ? 'default' : 'crosshair'
+          }
+        }));
+      });
+      rows.push(mk('div', { key: 'r' + q, style: { display: 'grid', gridTemplateColumns: gridCols, gap: '2px' } }, r));
+    });
+    return mk('div', { onMouseLeave: () => this.setState({ hover: null }), style: { display: 'inline-flex', flexDirection: 'column', gap: '2px' } }, rows);
+  }
+
+  barsElFor(rec, toks) {
+    const mk = React.createElement;
+    const maxV = Math.max.apply(null, rec.concat([0.0001]));
+    const H = 150;
+    const cols = rec.map((v, k) => {
+      const hgt = Math.max(3, v / maxV * H);
+      return mk('div', { key: k, style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', width: '46px', height: (H + 44) + 'px' } },
+        mk('div', { style: { font: "500 9.5px 'IBM Plex Mono', monospace", color: k === 0 ? '#2E6BDB' : '#94A0AD', fontWeight: k === 0 ? 600 : 500 } }, (v * 100).toFixed(0) + '%'),
+        mk('div', { title: this.disp(toks[k]) + ' receives ' + v.toFixed(3) + ' on average', style: { width: '26px', height: hgt + 'px', borderRadius: '4px 4px 2px 2px', background: k === 0 ? '#2E6BDB' : '#C3CFDD' } }),
+        mk('div', { style: { font: "500 9.5px 'IBM Plex Mono', monospace", color: k === 0 ? '#14181F' : '#5A6470', maxWidth: '46px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, this.disp(toks[k]))
+      );
+    });
+    return mk('div', { style: { display: 'flex', alignItems: 'flex-end', gap: '4px' } }, cols);
+  }
+
+  lineChart(conf) {
+    const mk = React.createElement;
+    const w = conf.w, h = conf.h, padL = 40, padR = 16, padT = 14, padB = 26;
+    const iw = w - padL - padR, ih = h - padT - padB;
+    const yMax = conf.yMax;
+    const kids = [];
+    for (let i = 0; i <= 4; i++) {
+      const yv = yMax * i / 4;
+      const y = padT + ih - (yv / yMax) * ih;
+      kids.push(mk('line', { key: 'g' + i, x1: padL, y1: y, x2: w - padR, y2: y, stroke: '#EBF0F5', strokeWidth: 1 }));
+      kids.push(mk('text', { key: 'yl' + i, x: padL - 8, y: y + 3, textAnchor: 'end', style: { font: "500 9px 'IBM Plex Mono', monospace", fill: '#94A0AD' } }, yv.toFixed(2)));
+    }
+    conf.series.forEach((s, si) => {
+      const m = s.data.length;
+      const xs = i => padL + (m === 1 ? iw / 2 : i * iw / (m - 1));
+      const ys = v => padT + ih - Math.min(v / yMax, 1) * ih;
+      kids.push(mk('polyline', {
+        key: 's' + si,
+        points: s.data.map((v, i) => xs(i).toFixed(1) + ',' + ys(v).toFixed(1)).join(' '),
+        fill: 'none', stroke: s.color, strokeWidth: s.width || 2.25,
+        strokeDasharray: s.dash || 'none', strokeLinejoin: 'round', strokeLinecap: 'round'
+      }));
+      if (s.dots) s.data.forEach((v, i) => {
+        const active = conf.markerX === i;
+        kids.push(mk('circle', {
+          key: 'd' + si + '_' + i, cx: xs(i), cy: ys(v), r: active ? 6 : 3.5,
+          fill: active ? '#2E6BDB' : '#FFFFFF', stroke: s.color, strokeWidth: 1.5,
+          style: conf.onPointClick ? { cursor: 'pointer' } : null,
+          onClick: conf.onPointClick ? () => conf.onPointClick(i) : null
+        }, mk('title', null, 'layer ' + (i + 1) + ' \u00B7 ' + v.toFixed(3))));
+      });
+    });
+    if (conf.xLabels) conf.xLabels.forEach((xl, i) => {
+      const m = conf.xLabels.length;
+      const x = padL + (m === 1 ? iw / 2 : i * iw / (m - 1));
+      kids.push(mk('text', { key: 'xl' + i, x: x, y: h - 8, textAnchor: 'middle', style: { font: "500 9px 'IBM Plex Mono', monospace", fill: '#94A0AD' } }, xl));
+    });
+    if (conf.xName) kids.push(mk('text', { key: 'xn', x: w - padR, y: h - 8, textAnchor: 'end', style: { font: "500 9px 'IBM Plex Mono', monospace", fill: '#C0C8D2' } }, conf.xName));
+    return mk('svg', { width: w, height: h, viewBox: '0 0 ' + w + ' ' + h, style: { display: 'block', width: '100%', height: 'auto' } }, kids);
+  }
+
+  expRows() {
+    if (this._expRows) return this._expRows;
+    const base = this.presets[0].text;
+    const variants = [
+      { label: 'baseline', text: base },
+      { label: 'nonsense first', text: 'zxqv cat sat on the mat because it was warm.' },
+      { label: 'punctuation first', text: '? cat sat on the mat because it was warm.' },
+      { label: 'very short', text: 'Hi there!' },
+      { label: 'long prompt', text: this.presets[3].text },
+      { label: 'repeated phrase', text: this.presets[1].text },
+      { label: 'repeated prefix', text: this.presets[5].text }
+    ];
+    this._expRows = variants.map(v => {
+      const lc = this.layerCurveFor(v.text);
+      const deep = (lc[8] + lc[9] + lc[10] + lc[11]) / 4;
+      return { label: v.label, v: deep };
+    });
+    return this._expRows;
+  }
+
+  expBarsEl() {
+    const mk = React.createElement;
+    const rows = this.expRows();
+    const maxV = 0.82;
+    const base = rows[0].v;
+    return mk('div', { style: { display: 'flex', flexDirection: 'column', gap: '11px' } }, rows.map((r, i) =>
+      mk('div', { key: i, style: { display: 'grid', gridTemplateColumns: '160px 1fr 130px', gap: '14px', alignItems: 'center' } },
+        mk('div', { style: { font: "500 11px 'IBM Plex Mono', monospace", color: i === 0 ? '#14181F' : '#4E5663', textAlign: 'right', fontWeight: i === 0 ? 600 : 500 } }, r.label),
+        mk('div', { style: { position: 'relative', height: '18px', background: '#EFF3F8', borderRadius: '4px' } },
+          mk('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: (r.v / maxV * 100).toFixed(1) + '%', borderRadius: '4px', background: i === 0 ? '#2E6BDB' : '#7FA3E3', transition: 'width 0.6s cubic-bezier(0.2,0.8,0.2,1)' } }),
+          i === 0 ? null : mk('div', { title: 'baseline', style: { position: 'absolute', left: (base / maxV * 100).toFixed(1) + '%', top: '-3px', bottom: '-3px', width: '2px', borderRadius: '1px', background: '#14181F', opacity: 0.3 } })
+        ),
+        mk('div', { style: { font: "600 12px 'IBM Plex Mono', monospace", color: '#14181F' } },
+          (r.v * 100).toFixed(1) + '%' + (i === 0 ? '' : '\u2002' + (r.v >= base ? '+' : '\u2212') + Math.abs((r.v - base) * 100).toFixed(1)))
+      )
+    ));
+  }
+
+  tocEl() {
+    const mk = React.createElement;
+    const items = [
+      ['s-token', '01 tokens'], ['s-attn', '02 attention'], ['s-sink', '03 the sink'],
+      ['s-why', '04 why'], ['s-depth', '05 depth'], ['s-exp', '06 experiment'],
+      ['s-collapse', '07 collapse'], ['s-scale', '08 scale'], ['s-sowhat', '09 so what']
+    ];
+    return mk('div', { id: 'toc-rail', style: { position: 'fixed', left: '22px', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '7px', zIndex: 40 } },
+      items.map(pair => {
+        const active = this.state.activeSec === pair[0];
+        return mk('a', {
+          key: pair[0], href: '#' + pair[0],
+          style: {
+            font: "500 10px 'IBM Plex Mono', monospace",
+            color: active ? '#2E6BDB' : '#94A0AD',
+            fontWeight: active ? 600 : 500,
+            textDecoration: 'none',
+            borderLeft: active ? '2px solid #2E6BDB' : '2px solid #DDE3EA',
+            padding: '1px 0 1px 8px',
+            transition: 'color 0.15s, border-color 0.15s'
+          }
+        }, pair[1]);
+      })
+    );
+  }
+
+  sparkSmall(data, w, h) {
+    const mk = React.createElement;
+    const pad = 6;
+    const max = (Math.max.apply(null, data) * 1.15) || 1;
+    const pts = data.map((v, i) => [pad + i * (w - 2 * pad) / (data.length - 1), h - pad - (v / max) * (h - 2 * pad)]);
+    const last = pts[pts.length - 1];
+    return mk('svg', { width: w, height: h, viewBox: '0 0 ' + w + ' ' + h, style: { display: 'block', width: '100%', height: 'auto' } },
+      mk('polyline', { points: pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), fill: 'none', stroke: '#2E6BDB', strokeWidth: 2, strokeLinejoin: 'round', strokeLinecap: 'round' }),
+      mk('circle', { cx: last[0], cy: last[1], r: 3, fill: '#2E6BDB' })
+    );
+  }
+
+  renderVals() {
+    const st = this.state;
+    const toksAll = this.tokensFor(st.prompt);
+    const toks = toksAll.slice(0, 14);
+    const A = this.matrixFor(st.prompt, st.layer, st.head);
+    const rec = this.receivedFor(A);
+    const lc = this.layerCurveFor(st.prompt);
+    const heroAvg = lc.reduce((a, b) => a + b, 0) / lc.length;
+    const heroPeak = Math.max.apply(null, lc);
+    let layerHeads = 0;
+    for (let h = 0; h < 12; h++) layerHeads += this.sinkAvg(this.matrixFor(st.prompt, st.layer, h));
+    layerHeads /= 12;
+    const hov = st.hover;
+    const seed = this.rng(99);
+    const simWith = lc.map((v, l) => 0.31 + 0.027 * l - 0.06 * v + seed() * 0.015);
+    const simWithout = lc.map((v, l) => 0.31 + 0.027 * l + 0.55 * (Math.pow(l / 11, 1.1)) * v * 0.9 + seed() * 0.015);
+    const recAccum = new Array(toks.length).fill(0);
+    for (let h = 0; h < 12; h++) {
+      const rh = this.receivedFor(this.matrixFor(st.prompt, st.layer, h));
+      for (let i = 0; i < recAccum.length && i < rh.length; i++) recAccum[i] += rh[i] / 12;
+    }
+    const restMax = Math.max.apply(null, recAccum.slice(1).concat([0.0001]));
+    const restChips = toks.slice(1).map((t, i) => ({
+      text: this.disp(t),
+      bg: this.lerpRamp(['#FFFFFF', '#C7D5E8'], (recAccum[i + 1] || 0) / restMax)
+    }));
+    const mkCurve = (nL, asym, sd) => {
+      const r = this.rng(sd);
+      return Array.from({ length: nL }, (_, i) => asym * Math.pow((i + 1) / nL, 0.62) + (r() - 0.5) * 0.04);
+    };
+    return {
+      statusText: st.running || st.expRunning ? 'running\u2026' : 'ready',
+      heroPct: (heroAvg * 100).toFixed(1) + '%',
+      heroPeak: (heroPeak * 100).toFixed(0) + '%',
+      heroSparkEl: this.sparkSmall(lc, 560, 44),
+      tocEl: this.tocEl(),
+      setupOpen: st.setupOpen,
+      setupChevron: st.setupOpen ? '\u25BE' : '\u25B8',
+      toggleSetup: () => this.setState(s => ({ setupOpen: !s.setupOpen })),
+      firstTokenDisp: toks.length ? this.disp(toks[0]) : '\u2014',
+      restChips: restChips,
+      tokenNote: toksAll.length > 14 ? 'showing first 14 of ' + toksAll.length + ' tokens' : toksAll.length + ' tokens \u00B7 simulated gpt2 tokenizer',
+      presetKey: st.presetKey,
+      onPresetChange: (e) => {
+        const key = e.target.value;
+        const p = this.presets.find(x => x.key === key);
+        this.setState(p ? { presetKey: key, promptDraft: p.text } : { presetKey: key });
+      },
+      promptDraft: st.promptDraft,
+      onPromptChange: (e) => this.setState({ promptDraft: e.target.value, presetKey: 'custom' }),
+      stale: st.promptDraft !== st.prompt && !st.running,
+      running: st.running,
+      runLabel: st.running ? 'running inference\u2026' : '\u25B6\uFE0E Run',
+      runInference: () => {
+        if (this.state.running) return;
+        this.setState({ running: true });
+        setTimeout(() => this.setState(s => ({ running: false, prompt: s.promptDraft, hover: null })), 650);
+      },
+      layerDisplay: st.layer + 1,
+      headDisplay: st.head + 1,
+      headPersona: 'head ' + (st.head + 1) + ' \u00B7 ' + ['strong sink head', 'local head \u2014 the sink fades', 'mixed head', 'moderate sink head'][st.head % 4],
+      onLayerChange: (e) => this.setState({ layer: (+e.target.value) - 1, hover: null }),
+      onHeadChange: (e) => this.setState({ head: (+e.target.value) - 1, hover: null }),
+      heatmapEl: this.heatmapEl(A, toks),
+      hoverText: hov
+        ? this.disp(toks[hov.q]) + ' \u2192 ' + this.disp(toks[hov.k]) + ' \u00B7 weight ' + hov.v.toFixed(3) + (hov.k === 0 ? '  \u2190 the sink' : '')
+        : 'hover a cell \u00B7 row = query token (listener) \u00B7 column = key token (listened to)',
+      barsEl: this.barsElFor(rec, toks),
+      sinkPctHead: (this.sinkAvg(A) * 100).toFixed(1) + '%',
+      sinkPctLayer: (layerHeads * 100).toFixed(1) + '%',
+      layerChartEl: this.lineChart({
+        w: 800, h: 240, yMax: 0.8, markerX: st.layer,
+        xLabels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+        onPointClick: (i) => this.setState({ layer: i, hover: null }),
+        series: [{ data: lc, color: '#2E6BDB', dots: true, width: 2.5 }]
+      }),
+      expRan: st.expRan,
+      expNotRan: !st.expRan,
+      expLabel: st.expRunning ? 'running 7 variants\u2026' : (st.expRan ? '\u25B6\uFE0E Re-run variants (cached)' : '\u25B6\uFE0E Run all 7 variants'),
+      runExperiment: () => {
+        if (this.state.expRunning) return;
+        this.setState({ expRunning: true });
+        setTimeout(() => this.setState({ expRunning: false, expRan: true }), 850);
+      },
+      expBarsEl: st.expRan ? this.expBarsEl() : null,
+      overmixChartEl: this.lineChart({
+        w: 800, h: 230, yMax: 1.0,
+        xLabels: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+        xName: 'layer',
+        series: [
+          { data: lc, color: '#2E6BDB', width: 2.5 },
+          { data: simWith, color: '#3D4651', width: 2 },
+          { data: simWithout, color: '#B2BCC8', width: 2, dash: '6 5' }
+        ]
+      }),
+      scaleChartEl: this.lineChart({
+        w: 800, h: 240, yMax: 0.9,
+        xLabels: ['0', '0.25', '0.5', '0.75', '1.0'],
+        xName: 'relative depth',
+        series: [
+          { data: mkCurve(6, 0.40, 11), color: '#B9CDEE', width: 2 },
+          { data: mkCurve(12, 0.55, 22), color: '#7FA3E3', width: 2 },
+          { data: mkCurve(36, 0.68, 33), color: '#3D74D6', width: 2.25 },
+          { data: mkCurve(48, 0.78, 44), color: '#1D4FA8', width: 2.5 }
+        ]
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>
