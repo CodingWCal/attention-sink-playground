@@ -65,12 +65,14 @@ def _(alt):
     MONO = "IBM Plex Mono, ui-monospace, monospace"
     SERIF = "Newsreader, Georgia, serif"
 
-    def styled(chart, h=320):
+    def styled(chart, h=320, frame=False):
         """Apply the shared chart theme. width='container' makes the chart fill
-        the page width (the notebook runs full-width), so visuals read large."""
+        the page width (the notebook runs full-width), so visuals read large.
+        frame=True draws a border around the plot — used for the abstract PCA
+        scatter so the dots sit in a defined box, not floating in white space."""
         return (
             chart.properties(height=h, width="container", background="transparent")
-            .configure_view(strokeWidth=0)
+            .configure_view(strokeWidth=1 if frame else 0, stroke=BORDER)
             .configure_axis(
                 labelFont=MONO,
                 titleFont=MONO,
@@ -726,13 +728,14 @@ def _(hidden, n_layers, np, pd, seq_len):
 
 
 @app.cell
-def _(ACCENT, L, collapse, mo, scatter_all, styled, tokens):
+def _(ACCENT, L, MONO, MUTED, clean_token, collapse, mo, scatter_all, styled, tokens):
     import altair as _alt
 
     _pts_df = scatter_all[scatter_all["layer"] == L].copy()
     _pts_df["token"] = [
         tokens[int(t)] if int(t) < len(tokens) else str(t) for t in _pts_df["tok"]
     ]
+    _pts_df["label"] = [clean_token(t) for t in _pts_df["token"]]
     # Frame = the content cloud's widest extent across ALL layers (symmetric about
     # the origin, since each layer is centered), padded. Fixed across layers, so a
     # shrinking cloud reads as collapse — not a silent rescale. The first token can
@@ -747,21 +750,36 @@ def _(ACCENT, L, collapse, mo, scatter_all, styled, tokens):
     _pts_df["x"] = _pts_df["x"].clip(-_rx, _rx)
     _pts_df["y"] = _pts_df["y"].clip(-_ry, _ry)
 
+    # Labelled (but tick-free) PCA axes + a faint grid give the eye a reference
+    # frame; the raw PCA numbers are arbitrary, so we hide them. mark_text prints
+    # each token next to its dot, so it's concrete (you see the words) and the
+    # overlap when they clump *is* the collapse.
+    _ax_x = _alt.Axis(title="principal component 1", labels=False, ticks=False,
+                      grid=True, gridColor="#EEF2F7", domainColor="#E2E8F0")
+    _ax_y = _alt.Axis(title="principal component 2", labels=False, ticks=False,
+                      grid=True, gridColor="#EEF2F7", domainColor="#E2E8F0")
+    _color = _alt.Color(
+        "kind:N",
+        scale=_alt.Scale(domain=["content token", "first token"], range=["#9DB3D6", ACCENT]),
+        legend=_alt.Legend(title=None, orient="top"),
+    )
     _pts = (
         _alt.Chart(_pts_df)
-        .mark_circle(size=260, opacity=0.85)
+        .mark_circle(size=300, opacity=0.9, stroke="#FFFFFF", strokeWidth=1)
         .encode(
-            x=_alt.X("x:Q", scale=_alt.Scale(domain=_xr), axis=None),
-            y=_alt.Y("y:Q", scale=_alt.Scale(domain=_yr), axis=None),
-            color=_alt.Color(
-                "kind:N",
-                scale=_alt.Scale(
-                    domain=["content token", "first token"],
-                    range=["#C9D6E8", ACCENT],
-                ),
-                legend=_alt.Legend(title=None, orient="top"),
-            ),
+            x=_alt.X("x:Q", scale=_alt.Scale(domain=_xr), axis=_ax_x),
+            y=_alt.Y("y:Q", scale=_alt.Scale(domain=_yr), axis=_ax_y),
+            color=_color,
             tooltip=[_alt.Tooltip("token:N"), _alt.Tooltip("kind:N")],
+        )
+    )
+    _labels = (
+        _alt.Chart(_pts_df)
+        .mark_text(fontSize=10, dy=-13, font=MONO, color=MUTED)
+        .encode(
+            x=_alt.X("x:Q", scale=_alt.Scale(domain=_xr)),
+            y=_alt.Y("y:Q", scale=_alt.Scale(domain=_yr)),
+            text="label:N",
         )
     )
     _sim = collapse[L] if L < len(collapse) else float("nan")
@@ -785,7 +803,7 @@ meaningful tokens from collapsing even faster.
 _Direction-only (cosine) 2-D PCA, each layer centered on a shared frame —
 illustrative, in the spirit of the paper, not its formal rank measure._"""
             ),
-            mo.ui.altair_chart(styled(_pts, h=460)),
+            mo.ui.altair_chart(styled(_pts + _labels, h=460, frame=True)),
         ],
         gap=0.8,
     )
@@ -887,6 +905,8 @@ try {
   const controls=new OrbitControls(camera,renderer.domElement);
   controls.enableDamping=true; controls.dampingFactor=0.08;
   controls.enableZoom=true; controls.enableRotate=true; controls.enablePan=false;
+  controls.minDistance=1.6; controls.maxDistance=7; controls.zoomSpeed=0.8;
+  controls.target.set(0,0,0);
   const box=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2,2,2)),
     new THREE.LineBasicMaterial({color:0xdce3ee}));
   scene.add(box);
