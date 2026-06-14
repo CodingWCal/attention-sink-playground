@@ -22,7 +22,7 @@ arXiv:2504.02732). Reactive architecture per the PRD §11:
 import marimo
 
 __generated_with = "0.23.9"
-app = marimo.App(width="medium", app_title="Attention Sink Playground")
+app = marimo.App(width="full", app_title="Attention Sink Playground")
 
 
 # ============================================================ imports
@@ -65,24 +65,30 @@ def _(alt):
     MONO = "IBM Plex Mono, ui-monospace, monospace"
     SERIF = "Newsreader, Georgia, serif"
 
-    def styled(chart, h=260):
-        """Apply the shared chart theme to a single-view Altair chart."""
+    def styled(chart, h=320):
+        """Apply the shared chart theme. width='container' makes the chart fill
+        the page width (the notebook runs full-width), so visuals read large."""
         return (
-            chart.properties(height=h, background="transparent")
+            chart.properties(height=h, width="container", background="transparent")
             .configure_view(strokeWidth=0)
             .configure_axis(
                 labelFont=MONO,
                 titleFont=MONO,
                 labelColor=MUTED,
                 titleColor=SUBTLE,
-                labelFontSize=9,
-                titleFontSize=10,
+                labelFontSize=11,
+                titleFontSize=12,
                 domainColor=BORDER,
                 tickColor=BORDER,
                 grid=False,
             )
             .configure_legend(
-                labelFont=MONO, titleFont=MONO, labelColor=MUTED, titleColor=SUBTLE
+                labelFont=MONO,
+                titleFont=MONO,
+                labelColor=MUTED,
+                titleColor=SUBTLE,
+                labelFontSize=11,
+                titleFontSize=12,
             )
         )
 
@@ -503,7 +509,7 @@ column (token 0) — it tends to glow.
 
 @app.cell
 def _(heat, mo, styled):
-    mo.ui.altair_chart(styled(heat, h=320))
+    mo.ui.altair_chart(styled(heat, h=460))
     return
 
 
@@ -565,7 +571,7 @@ all heads at layer {L}: {sink_layer_allheads:.0%}</span></div></div>"""
                 "first token is an **attention sink**."
             ),
             stat,
-            mo.ui.altair_chart(styled(bars + ann, h=240)),
+            mo.ui.altair_chart(styled(bars + ann, h=340)),
         ],
         gap=0.8,
     )
@@ -674,7 +680,7 @@ def _(head_sel, layer_sel, layerwise, mo, n_layers, pd, playing, styled, ticker)
                 [layer_sel, head_sel, playing, ticker],
                 justify="start", gap=1.5, align="center",
             ),
-            mo.ui.altair_chart(styled(line + rule + peak_txt, h=240)),
+            mo.ui.altair_chart(styled(line + rule + peak_txt, h=340)),
         ],
         gap=0.8,
     )
@@ -728,7 +734,7 @@ def _(ACCENT, L, collapse, mo, scatter_all, styled, tokens):
 
     _pts = (
         _alt.Chart(_pts_df)
-        .mark_circle(size=150, opacity=0.85)
+        .mark_circle(size=260, opacity=0.85)
         .encode(
             x=_alt.X("x:Q", scale=_alt.Scale(domain=_xr), axis=None),
             y=_alt.Y("y:Q", scale=_alt.Scale(domain=_yr), axis=None),
@@ -763,7 +769,7 @@ even faster.
 _2-D PCA of the hidden states on a shared frame across layers — illustrative, in
 the spirit of the paper, not its formal rank measure._"""
             ),
-            mo.ui.altair_chart(styled(_pts, h=300)),
+            mo.ui.altair_chart(styled(_pts, h=460)),
         ],
         gap=0.8,
     )
@@ -851,7 +857,7 @@ def _(ACCENT, mo, overall_sink, pd, prompt, run_experiment, run_inference, seq_l
                 f"bar is your current sentence (*“{prompt[:48]}{'…' if len(prompt) > 48 else ''}”*) "
                 f"— see where it ranks against the six controlled variants."
             ),
-            mo.ui.altair_chart(styled(exp_chart, h=280)),
+            mo.ui.altair_chart(styled(exp_chart, h=360)),
         ],
         gap=0.6,
     )
@@ -917,7 +923,7 @@ the first-token parking spot.
 _This meter illustrates representational collapse in the spirit of the paper; it
 is not a reproduction of its formal measures._"""
             ),
-            mo.ui.altair_chart(styled(meter, h=260)),
+            mo.ui.altair_chart(styled(meter, h=360)),
         ],
         gap=0.8,
     )
@@ -997,7 +1003,7 @@ def _(ACCENT, mo, pd, run_compare, run_inference, styled):
             ],
         )
     )
-    mo.ui.altair_chart(styled(comp_chart, h=280))
+    mo.ui.altair_chart(styled(comp_chart, h=380))
     return
 
 
