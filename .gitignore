@@ -4,3 +4,6 @@
 .marimo/
 __marimo__/
 *.tmp.html
+check_*.html
+.threejs_proto/
+.claude/launch.json

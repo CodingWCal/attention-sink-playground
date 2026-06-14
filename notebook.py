@@ -792,6 +792,152 @@ illustrative, in the spirit of the paper, not its formal rank measure._"""
     return
 
 
+# ------------------------------------------------------------ 6b · 3-D collapse (three.js)
+@app.cell
+def _(ACCENT, hidden, n_layers, np, seq_len):
+    import json as _json
+
+    # Same recipe as the 2-D scatter (unit-normalize -> direction; center each
+    # layer on its content centroid) but keep THREE principal components for an
+    # orbitable cloud. Pre-scale into a [-1,1] cube so the JS just plots points.
+    _H = hidden.numpy()
+    _H = _H / np.linalg.norm(_H, axis=-1, keepdims=True).clip(1e-8)
+    _, _S, _D = _H.shape
+    _fit = _H[:, 1:, :].reshape(-1, _D) if seq_len > 1 else _H.reshape(-1, _D)
+    _mean = _fit.mean(axis=0)
+    _, _, _Vt = np.linalg.svd(_fit - _mean, full_matrices=False)
+    _proj = (_H - _mean) @ _Vt[:3].T              # (L+1, S, 3)
+    _cl = []
+    for _Li in range(n_layers):
+        _P = _proj[_Li + 1]
+        _c = _P[1:].mean(axis=0) if _S > 1 else _P[0]
+        _cl.append(_P - _c)
+    _cl = np.stack(_cl)                            # (L, S, 3), per-layer centered
+    _content = _cl[:, 1:, :] if _S > 1 else _cl
+    _scale = np.abs(_content).max(axis=(0, 1)).clip(1e-6)   # per-axis (3,)
+    _norm = np.clip(_cl / _scale * 0.9, -1.0, 1.0)
+    viz3d_json = _json.dumps(
+        {
+            "accent": ACCENT,
+            "layers": int(n_layers),
+            "points": [
+                [
+                    {
+                        "x": round(float(_norm[_Li, _ti, 0]), 4),
+                        "y": round(float(_norm[_Li, _ti, 1]), 4),
+                        "z": round(float(_norm[_Li, _ti, 2]), 4),
+                        "first": _ti == 0,
+                    }
+                    for _ti in range(_S)
+                ]
+                for _Li in range(n_layers)
+            ],
+        }
+    )
+    return (viz3d_json,)
+
+
+@app.cell
+def _(mo, viz3d_json):
+    # Self-contained three.js widget (sandboxed iframe). It owns its OWN layer
+    # slider + play button so orbiting/animating never round-trips to Python.
+    # If three.js can't load, the #err overlay shows and the 2-D scatter above
+    # still carries the story — so this is purely additive.
+    _tpl = """<!doctype html><html><head><meta charset="utf-8"/>
+<style>
+  html,body{margin:0;background:#F8FAFC;font-family:ui-sans-serif,sans-serif;}
+  #wrap{position:relative;width:100%;height:520px;}
+  #cv{width:100%;height:100%;display:block;}
+  #ctrls{position:absolute;left:14px;bottom:14px;right:14px;display:flex;align-items:center;
+    gap:12px;background:rgba(255,255,255,.82);backdrop-filter:blur(6px);border:1px solid #E2E8F0;
+    border-radius:10px;padding:8px 12px;font:500 12px 'IBM Plex Mono',ui-monospace,monospace;color:#4E5663;}
+  #play{border:1px solid #2E6BDB;background:#2E6BDB;color:#fff;border-radius:7px;padding:5px 12px;cursor:pointer;font:inherit;}
+  #play.paused{background:#fff;color:#2E6BDB;}
+  #range{flex:1;accent-color:#2E6BDB;}
+  #err{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:24px;color:#7A828D;font-size:13px;}
+  .lab{white-space:nowrap;}
+</style></head><body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+  <div id="ctrls">
+    <button id="play" class="paused">&#9654; play depth</button>
+    <span class="lab">layer <b id="lnum">0</b></span>
+    <input id="range" type="range" min="0" max="11" value="0" step="1"/>
+    <span class="lab" style="color:#7A828D;">drag to orbit &middot; scroll to zoom</span>
+  </div>
+  <div id="err">3D view unavailable here &mdash; the 2D chart above tells the same story.</div>
+</div>
+<script type="importmap">
+{ "imports": { "three": "https://esm.sh/three@0.160.0", "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+const DATA = __DATA__;
+try {
+  const THREE = await import("three");
+  const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+  const wrap=document.getElementById("wrap"), canvas=document.getElementById("cv");
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(45,1,0.01,100);
+  camera.position.set(1.9,1.4,2.3);
+  const controls=new OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=false;
+  const box=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2,2,2)),
+    new THREE.LineBasicMaterial({color:0xdce3ee}));
+  scene.add(box);
+  const ACCENT=new THREE.Color(DATA.accent), PALE=new THREE.Color("#9DB3D6");
+  const n=DATA.points[0].length, spheres=[], cur=[];
+  for(let i=0;i<n;i++){
+    const first=DATA.points[0][i].first;
+    const m=new THREE.Mesh(new THREE.SphereGeometry(first?0.055:0.038,18,18),
+      new THREE.MeshBasicMaterial({color:first?ACCENT:PALE}));
+    scene.add(m); spheres.push(m);
+    const p=DATA.points[0][i]; cur.push(new THREE.Vector3(p.x,p.y,p.z));
+  }
+  let target=0; const tmp=new THREE.Vector3();
+  function render(){controls.update();renderer.render(scene,camera);}
+  function resize(){const w=wrap.clientWidth,h=wrap.clientHeight;renderer.setSize(w,h,false);
+    camera.aspect=w/h;camera.updateProjectionMatrix();render();}
+  window.addEventListener("resize",resize);
+  controls.addEventListener("change",render);
+  let raf=0;
+  function settle(){const tp=DATA.points[target];let moving=false;
+    for(let i=0;i<n;i++){tmp.set(tp[i].x,tp[i].y,tp[i].z);cur[i].lerp(tmp,0.16);
+      spheres[i].position.copy(cur[i]);if(cur[i].distanceToSquared(tmp)>1e-6)moving=true;}
+    render();raf=moving?requestAnimationFrame(settle):0;}
+  function go(L){target=L;if(!raf)settle();}
+  resize();go(0);
+  const range=document.getElementById("range"),lnum=document.getElementById("lnum"),play=document.getElementById("play");
+  range.max=String(DATA.layers-1);
+  function setLayer(L){range.value=String(L);lnum.textContent=String(L);go(L);}
+  range.addEventListener("input",()=>setLayer(+range.value));
+  let timer=null;
+  play.addEventListener("click",()=>{
+    if(timer){clearInterval(timer);timer=null;play.classList.add("paused");play.innerHTML="&#9654; play depth";}
+    else{play.classList.remove("paused");play.textContent="❚❚ pause";
+      timer=setInterval(()=>setLayer((target+1)%DATA.layers),750);}
+  });
+}catch(e){document.getElementById("err").style.display="grid";console.error("threejs init failed",e);}
+</script></body></html>"""
+    _doc = _tpl.replace("__DATA__", viz3d_json)
+    mo.vstack(
+        [
+            mo.md(
+                "**Prefer it in 3-D? Spin the same cloud.** Same direction-only "
+                "representations, now with a third principal component — **drag to "
+                "orbit**, scroll to zoom, and hit **▶ play depth** to watch the "
+                "content tokens collapse inward while the "
+                "<span style='color:#2E6BDB;font-weight:600;'>first token</span> "
+                "drifts to the edge."
+            ),
+            mo.iframe(_doc, height="560px"),
+        ],
+        gap=0.6,
+    )
+    return
+
+
 # ------------------------------------------------------------ 8 · experiment
 @app.cell
 def _(mo):
