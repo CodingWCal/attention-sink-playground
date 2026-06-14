@@ -14,7 +14,7 @@ into something you can see, poke, and break.
 
 ## ▶ Open in molab
 
-**[Open the live notebook in molab](https://molab.marimo.io/notebooks/nb_QLziNrK8G6PCnCbjZZXedE)**
+**[Open the live notebook in molab](https://molab.marimo.io/notebooks/nb_3YFUCgvV9Pf9JPL24upDYw)** — click **Run it now** to launch the interactive version.
 
 Built for the **alphaXiv × marimo "Bring Research to Life" molab Notebook Competition #2.**
 
