@@ -854,7 +854,8 @@ def _(mo, viz3d_json):
   #play{border:1px solid #2E6BDB;background:#2E6BDB;color:#fff;border-radius:7px;padding:5px 12px;cursor:pointer;font:inherit;}
   #play.paused{background:#fff;color:#2E6BDB;}
   #range{flex:1;accent-color:#2E6BDB;}
-  #err{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:24px;color:#7A828D;font-size:13px;}
+  #err{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;
+    color:#7A828D;font-size:13px;background:#F8FAFC;}
   .lab{white-space:nowrap;}
 </style></head><body>
 <div id="wrap">
@@ -865,13 +866,14 @@ def _(mo, viz3d_json):
     <input id="range" type="range" min="0" max="11" value="0" step="1"/>
     <span class="lab" style="color:#7A828D;">drag to orbit &middot; scroll to zoom</span>
   </div>
-  <div id="err">3D view unavailable here &mdash; the 2D chart above tells the same story.</div>
+  <div id="err">Rendering the 3-D cloud&hellip;</div>
 </div>
 <script type="importmap">
 { "imports": { "three": "https://esm.sh/three@0.160.0", "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/" } }
 </script>
 <script type="module">
 const DATA = __DATA__;
+const ERR = document.getElementById("err");
 try {
   const THREE = await import("three");
   const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
@@ -918,9 +920,26 @@ try {
     else{play.classList.remove("paused");play.textContent="❚❚ pause";
       timer=setInterval(()=>setLayer((target+1)%DATA.layers),750);}
   });
-}catch(e){document.getElementById("err").style.display="grid";console.error("threejs init failed",e);}
+  ERR.style.display="none";   // success -> reveal the canvas
+} catch (e) {
+  ERR.textContent="3-D view couldn't load here — the 2-D chart above tells the same story.";
+  ERR.style.display="grid";
+  console.error("threejs init failed", e);
+}
 </script></body></html>"""
+    import html as _html
+
     _doc = _tpl.replace("__DATA__", viz3d_json)
+    # Embed via an explicit same-origin srcdoc iframe (mo.Html) rather than
+    # mo.iframe: molab's CSP frame-src blocks mo.iframe's blob: URL (renders a
+    # broken-image box), but a srcdoc frame is same-origin and allowed. The
+    # sandbox keeps it isolated while permitting scripts. If the esm.sh CDN is
+    # still blocked, the in-frame #err message shows instead — never a broken box.
+    _frame = (
+        '<iframe sandbox="allow-scripts allow-same-origin" '
+        'style="width:100%;height:560px;border:1px solid #E2E8F0;border-radius:12px;" '
+        'srcdoc="' + _html.escape(_doc, quote=True) + '"></iframe>'
+    )
     mo.vstack(
         [
             mo.md(
@@ -931,7 +950,7 @@ try {
                 "<span style='color:#2E6BDB;font-weight:600;'>first token</span> "
                 "drifts to the edge."
             ),
-            mo.iframe(_doc, height="560px"),
+            mo.Html(_frame),
         ],
         gap=0.6,
     )
