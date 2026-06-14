@@ -462,6 +462,153 @@ whole word, sometimes a piece of one, sometimes punctuation. The first token
     return
 
 
+# ------------------------------------------------------------ 01b · tokenization in 3-D (three.js)
+@app.cell
+def _(ACCENT, clean_token, tokens):
+    import json as _json
+
+    tokens3d_json = _json.dumps(
+        {
+            "accent": ACCENT,
+            "tokens": [
+                {"text": clean_token(t), "first": i == 0} for i, t in enumerate(tokens)
+            ],
+        }
+    )
+    return (tokens3d_json,)
+
+
+@app.cell
+def _(mo, tokens3d_json):
+    # Same verified three.js + same-origin srcdoc pattern as §06b. Each token is a
+    # labelled 3-D tile (canvas-texture, so no font files); they start packed edge-
+    # to-edge as the raw sentence, then animate apart into the chunks the model sees.
+    _tpl = """<!doctype html><html><head><meta charset="utf-8"/>
+<style>
+  html,body{margin:0;background:#F8FAFC;font-family:ui-sans-serif,sans-serif;}
+  #wrap{position:relative;width:100%;height:420px;}
+  #cv{width:100%;height:100%;display:block;touch-action:none;cursor:grab;}
+  #cv:active{cursor:grabbing;}
+  #ctrls{position:absolute;left:14px;bottom:14px;right:14px;display:flex;align-items:center;
+    gap:12px;background:rgba(255,255,255,.82);backdrop-filter:blur(6px);border:1px solid #E2E8F0;
+    border-radius:10px;padding:8px 12px;font:500 12px 'IBM Plex Mono',ui-monospace,monospace;color:#4E5663;}
+  #replay{border:1px solid #2E6BDB;background:#2E6BDB;color:#fff;border-radius:7px;padding:5px 12px;cursor:pointer;font:inherit;}
+  .lab{white-space:nowrap;}
+  #err{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;
+    color:#7A828D;font-size:13px;background:#F8FAFC;}
+</style></head><body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+  <div id="ctrls">
+    <button id="replay">&#8635; replay</button>
+    <span class="lab"><b id="ntok">0</b> tokens</span>
+    <span class="lab" style="color:#7A828D;flex:1;">your sentence, cut into the chunks the model actually sees &middot; drag to orbit</span>
+  </div>
+  <div id="err">Rendering the tokens&hellip;</div>
+</div>
+<script type="importmap">
+{ "imports": { "three": "https://esm.sh/three@0.160.0", "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+const DATA = __DATA__;
+const ERR = document.getElementById("err");
+try {
+  const THREE = await import("three");
+  const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+  const wrap=document.getElementById("wrap"), canvas=document.getElementById("cv");
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(42,1,0.01,100);
+  camera.position.set(0,1.1,7.5);
+  const controls=new OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true; controls.dampingFactor=0.08; controls.enablePan=false;
+  controls.minDistance=3; controls.maxDistance=16;
+  scene.add(new THREE.AmbientLight(0xffffff,1));
+  function tileTexture(text, bg, fg){
+    const fontPx=72, pad=28, c=document.createElement("canvas"), x=c.getContext("2d");
+    x.font=`600 ${fontPx}px 'IBM Plex Mono', monospace`;
+    const w=Math.ceil(x.measureText(text).width)+pad*2, h=fontPx+pad*2;
+    c.width=w; c.height=h;
+    x.fillStyle=bg; x.fillRect(0,0,w,h);
+    x.font=`600 ${fontPx}px 'IBM Plex Mono', monospace`;
+    x.fillStyle=fg; x.textBaseline="middle"; x.textAlign="center";
+    x.fillText(text,w/2,h/2+2);
+    const t=new THREE.CanvasTexture(c); t.anisotropy=4; t.needsUpdate=true;
+    return {tex:t, aspect:w/h};
+  }
+  const H=1.0, GAP=0.22, DEPTH=0.14;
+  const tiles=[], widths=[];
+  DATA.tokens.forEach(tk=>{
+    const bg = tk.first ? "#2E6BDB" : "#FFFFFF";
+    const fg = tk.first ? "#FFFFFF" : "#14181F";
+    const {tex,aspect}=tileTexture(tk.text||"∅", bg, fg);
+    const w=Math.max(0.5, aspect*H);
+    const side=new THREE.MeshBasicMaterial({color: tk.first ? 0x2E6BDB : 0xE7ECF3});
+    const face=new THREE.MeshBasicMaterial({map:tex});
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,H,DEPTH),
+      [side,side,side,side,face,face]);
+    scene.add(mesh); tiles.push(mesh); widths.push(w);
+  });
+  const n=tiles.length;
+  function centers(gap){
+    const total=widths.reduce((a,b)=>a+b,0)+gap*(n-1);
+    let x=-total/2, out=[];
+    for(let i=0;i<n;i++){ out.push(x+widths[i]/2); x+=widths[i]+gap; }
+    return out;
+  }
+  const packed=centers(0.005), spread=centers(GAP);
+  let t=0, target=1;
+  const ease=u=>u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+  function resize(){const w=wrap.clientWidth,h=wrap.clientHeight;renderer.setSize(w,h,false);
+    camera.aspect=w/h;camera.updateProjectionMatrix();}
+  window.addEventListener("resize",resize); resize();
+  function loop(){
+    requestAnimationFrame(loop);
+    t += (target - t) * 0.06;
+    const e = ease(Math.min(1,Math.max(0,t)));
+    for(let i=0;i<n;i++){
+      tiles[i].position.x = packed[i] + (spread[i]-packed[i])*e;
+      tiles[i].position.z = Math.sin(e*Math.PI) * 0.5 * ((i%2)?1:-1) * 0.6;
+    }
+    controls.update();
+    renderer.render(scene,camera);
+  }
+  loop();
+  document.getElementById("ntok").textContent=String(n);
+  document.getElementById("replay").addEventListener("click",()=>{ t=0; target=1; });
+  ERR.style.display="none";
+} catch (e) {
+  ERR.textContent="3-D view couldn't load here — the token chips above show the same split.";
+  ERR.style.display="grid";
+  console.error("token3d init failed", e);
+}
+</script></body></html>"""
+    import html as _html
+
+    _doc = _tpl.replace("__DATA__", tokens3d_json)
+    _frame = (
+        '<iframe sandbox="allow-scripts allow-same-origin" '
+        'style="width:100%;height:440px;border:1px solid #E2E8F0;border-radius:12px;" '
+        'srcdoc="' + _html.escape(_doc, quote=True) + '"></iframe>'
+    )
+    mo.vstack(
+        [
+            mo.md(
+                "**See the split in 3-D.** Your sentence starts as one solid bar, then "
+                "**watch it break into the chunks the model actually reads** — drag to "
+                "orbit, and hit **↻ replay** to re-cut. Notice the `␣` on most tiles: the "
+                "leading space is *part of* the token, which is why the "
+                "<span style='color:#2E6BDB;font-weight:600;'>first token</span> isn't "
+                "simply the first letter."
+            ),
+            mo.Html(_frame),
+        ],
+        gap=0.6,
+    )
+    return
+
+
 # ------------------------------------------------------------ 02 · attention heatmap
 @app.cell
 def _(A, disp, mo, pd, pos_label, styled, tokens):
