@@ -500,9 +500,9 @@ def _(mo, tokens3d_json):
 <div id="wrap">
   <canvas id="cv"></canvas>
   <div id="ctrls">
-    <button id="replay">&#8635; replay</button>
+    <button id="replay">&#8635; re-cut</button>
     <span class="lab"><b id="ntok">0</b> tokens</span>
-    <span class="lab" style="color:#7A828D;flex:1;">your sentence, cut into the chunks the model actually sees &middot; drag to orbit</span>
+    <span class="lab" style="color:#7A828D;flex:1;">one bar of text &rarr; the chunks the model sees &middot; drag to orbit</span>
   </div>
   <div id="err">Rendering the tokens&hellip;</div>
 </div>
@@ -519,11 +519,9 @@ try {
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   const scene=new THREE.Scene();
-  const camera=new THREE.PerspectiveCamera(42,1,0.01,100);
-  camera.position.set(0,1.1,7.5);
+  const camera=new THREE.PerspectiveCamera(42,1,0.01,200);
   const controls=new OrbitControls(camera,renderer.domElement);
   controls.enableDamping=true; controls.dampingFactor=0.08; controls.enablePan=false;
-  controls.minDistance=3; controls.maxDistance=16;
   scene.add(new THREE.AmbientLight(0xffffff,1));
   function tileTexture(text, bg, fg){
     const fontPx=72, pad=28, c=document.createElement("canvas"), x=c.getContext("2d");
@@ -537,7 +535,7 @@ try {
     const t=new THREE.CanvasTexture(c); t.anisotropy=4; t.needsUpdate=true;
     return {tex:t, aspect:w/h};
   }
-  const H=1.0, GAP=0.22, DEPTH=0.14;
+  const H=1.0, GAP=0.5, DEPTH=0.14;
   const tiles=[], widths=[];
   DATA.tokens.forEach(tk=>{
     const bg = tk.first ? "#2E6BDB" : "#FFFFFF";
@@ -557,26 +555,41 @@ try {
     for(let i=0;i<n;i++){ out.push(x+widths[i]/2); x+=widths[i]+gap; }
     return out;
   }
-  const packed=centers(0.005), spread=centers(GAP);
-  let t=0, target=1;
+  const packed=centers(0.01), spread=centers(GAP);          // solid bar vs separated chunks
+  const rowW=(spread[n-1]+widths[n-1]/2)-(spread[0]-widths[0]/2);
+  let startT=performance.now(), fitted=false;
+  const DUR=1500, STAG=0.55;                                // ~1.5s unzip, left-to-right
   const ease=u=>u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
-  function resize(){const w=wrap.clientWidth,h=wrap.clientHeight;renderer.setSize(w,h,false);
-    camera.aspect=w/h;camera.updateProjectionMatrix();}
+  function resize(){
+    const w=wrap.clientWidth,h=wrap.clientHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect=w/h; camera.updateProjectionMatrix();
+    if(!fitted){                                            // frame the whole sentence once
+      const vF=camera.fov*Math.PI/180, hF=2*Math.atan(Math.tan(vF/2)*camera.aspect);
+      const z=Math.max((rowW/2+0.4)/Math.tan(hF/2),(H*1.6/2)/Math.tan(vF/2))+0.8;
+      camera.position.set(0,0.7,z);
+      controls.minDistance=z*0.5; controls.maxDistance=z*2.4; controls.target.set(0,0,0);
+      controls.update(); fitted=true;
+    }
+  }
   window.addEventListener("resize",resize); resize();
   function loop(){
     requestAnimationFrame(loop);
-    t += (target - t) * 0.06;
-    const e = ease(Math.min(1,Math.max(0,t)));
+    // Time-based so the cut always reads at ~1.5s, whatever the frame rate.
+    const t = Math.min(1, (performance.now()-startT)/DUR);
     for(let i=0;i<n;i++){
+      const p = Math.min(1, Math.max(0, t*(1+STAG) - (n>1 ? i/(n-1) : 0)*STAG));
+      const e = ease(p);
       tiles[i].position.x = packed[i] + (spread[i]-packed[i])*e;
-      tiles[i].position.z = Math.sin(e*Math.PI) * 0.5 * ((i%2)?1:-1) * 0.6;
+      tiles[i].position.z = Math.sin(e*Math.PI) * 0.45 * ((i%2)?1:-1);
+      tiles[i].position.y = Math.sin(e*Math.PI) * 0.12;
     }
     controls.update();
     renderer.render(scene,camera);
   }
   loop();
   document.getElementById("ntok").textContent=String(n);
-  document.getElementById("replay").addEventListener("click",()=>{ t=0; target=1; });
+  document.getElementById("replay").addEventListener("click",()=>{ startT=performance.now(); });
   ERR.style.display="none";
 } catch (e) {
   ERR.textContent="3-D view couldn't load here — the token chips above show the same split.";
