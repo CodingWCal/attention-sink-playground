@@ -690,28 +690,34 @@ def _(head_sel, layer_sel, layerwise, mo, n_layers, pd, playing, styled, ticker)
 # ------------------------------------------------------------ 6 · collapse scatter (PCA)
 @app.cell
 def _(hidden, n_layers, np, pd, seq_len):
-    # Project every layer's token representations into ONE shared 2-D frame (the
-    # top-2 principal components, fit on content tokens pooled across all layers) so
-    # the dots live in a stable space and you can literally watch them drift
-    # together with depth — over-mixing / representational collapse, made visible.
+    # Make representational collapse VISIBLE. Two deliberate choices so the picture
+    # matches the over-mixing meter (which measures cosine similarity):
+    #   1. Unit-normalize each token -> the projection captures DIRECTION, not norm.
+    #      Deep layers have huge-norm vectors; without this they spread by magnitude
+    #      and the dots drift *apart* with depth, contradicting the story.
+    #   2. Center each layer's content cloud at the origin -> we see the cloud's
+    #      *size* (the collapse) instead of its drift across the frame, so the dots
+    #      genuinely pull together as cosine similarity climbs.
     # Locals are underscore-prefixed so marimo keeps them cell-private.
     _H = hidden.numpy()                          # (L+1, S, D)
+    _H = _H / np.linalg.norm(_H, axis=-1, keepdims=True).clip(1e-8)
     _, _S, _D = _H.shape
     _fit = _H[:, 1:, :].reshape(-1, _D) if seq_len > 1 else _H.reshape(-1, _D)
     _mean = _fit.mean(axis=0)
     _, _, _Vt = np.linalg.svd(_fit - _mean, full_matrices=False)
-    _PC = _Vt[:2]                                # (2, D)
-    _proj = (_H - _mean) @ _PC.T                 # (L+1, S, 2)
+    _proj = (_H - _mean) @ _Vt[:2].T             # (L+1, S, 2)
     _rows = []
     for _Li in range(n_layers):                  # hidden[_Li+1] = output of attn layer _Li
         _P = _proj[_Li + 1]
+        _c = _P[1:].mean(axis=0) if _S > 1 else _P[0]   # content centroid
         for _ti in range(_S):
+            _xy = _P[_ti] - _c
             _rows.append(
                 {
                     "layer": _Li,
                     "tok": _ti,
-                    "x": float(_P[_ti, 0]),
-                    "y": float(_P[_ti, 1]),
+                    "x": float(_xy[0]),
+                    "y": float(_xy[1]),
                     "kind": "first token" if _ti == 0 else "content token",
                 }
             )
@@ -727,10 +733,19 @@ def _(ACCENT, L, collapse, mo, scatter_all, styled, tokens):
     _pts_df["token"] = [
         tokens[int(t)] if int(t) < len(tokens) else str(t) for t in _pts_df["tok"]
     ]
-    # Lock the axis ranges across ALL layers so shrinking spread reads as the points
-    # moving together, not the chart quietly rescaling under them.
-    _xr = [float(scatter_all["x"].min()), float(scatter_all["x"].max())]
-    _yr = [float(scatter_all["y"].min()), float(scatter_all["y"].max())]
+    # Frame = the content cloud's widest extent across ALL layers (symmetric about
+    # the origin, since each layer is centered), padded. Fixed across layers, so a
+    # shrinking cloud reads as collapse — not a silent rescale. The first token can
+    # land outside this frame at shallow layers; clamp it to the edge so it stays
+    # visible (and visibly apart) without blowing out the view.
+    _content = scatter_all[scatter_all["kind"] == "content token"]
+    _src = _content if len(_content) else scatter_all
+    _rx = float(_src["x"].abs().max()) * 1.18 or 1.0
+    _ry = float(_src["y"].abs().max()) * 1.18 or 1.0
+    _xr = [-_rx, _rx]
+    _yr = [-_ry, _ry]
+    _pts_df["x"] = _pts_df["x"].clip(-_rx, _rx)
+    _pts_df["y"] = _pts_df["y"].clip(-_ry, _ry)
 
     _pts = (
         _alt.Chart(_pts_df)
@@ -757,17 +772,18 @@ def _(ACCENT, L, collapse, mo, scatter_all, styled, tokens):
             mo.md(
                 f"""### 06 · Watch the tokens collapse
 
-Each dot is one token's **internal representation**, squashed to 2-D. Use the
-**layer** slider above — or **▶ play depth** — and watch the content tokens
-(<span style="color:#9DB3D6;font-weight:600;">pale</span>) drift into a single
-clump as you go deeper, while the
-<span style="color:{ACCENT};font-weight:600;">first token</span> sits off on its
-own. That clumping *is* over-mixing: by this layer the content tokens are
-**{_sim_txt} similar** to each other. The sink is what keeps them from collapsing
-even faster.
+Each dot is one token's **internal representation** — *direction only*
+(unit-normalized), flattened to 2-D. Drag the **layer** slider above, or hit
+**▶ play depth**, and watch the content tokens
+(<span style="color:#9DB3D6;font-weight:600;">pale</span>) **pull together into a
+single clump** as you go deeper: by this layer they're **{_sim_txt} similar** to
+one another — exactly the *over-mixing* the paper warns about. The
+<span style="color:{ACCENT};font-weight:600;">first token</span> is highlighted
+for reference (it sits apart in the early layers); the sink is what keeps the
+meaningful tokens from collapsing even faster.
 
-_2-D PCA of the hidden states on a shared frame across layers — illustrative, in
-the spirit of the paper, not its formal rank measure._"""
+_Direction-only (cosine) 2-D PCA, each layer centered on a shared frame —
+illustrative, in the spirit of the paper, not its formal rank measure._"""
             ),
             mo.ui.altair_chart(styled(_pts, h=460)),
         ],
