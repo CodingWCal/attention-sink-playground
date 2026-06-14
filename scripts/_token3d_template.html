@@ -37,6 +37,12 @@ try {
   const camera=new THREE.PerspectiveCamera(42,1,0.01,200);
   const controls=new OrbitControls(camera,renderer.domElement);
   controls.enableDamping=true; controls.dampingFactor=0.08; controls.enablePan=false;
+  controls.autoRotate=true; controls.autoRotateSpeed=0.45;   // gentle idle spin
+  let _idle=performance.now();
+  canvas.addEventListener("pointerdown",()=>{controls.autoRotate=false;_idle=performance.now();});
+  canvas.addEventListener("pointermove",()=>{if(!controls.autoRotate)_idle=performance.now();});
+  canvas.addEventListener("pointerup",()=>{_idle=performance.now();});
+  canvas.addEventListener("wheel",()=>{controls.autoRotate=false;_idle=performance.now();},{passive:true});
   scene.add(new THREE.AmbientLight(0xffffff,1));
 
   // One labelled tile per token (canvas texture -> no font files needed).
@@ -102,6 +108,7 @@ try {
       tiles[i].position.z = Math.sin(e*Math.PI) * 0.45 * ((i%2)?1:-1);
       tiles[i].position.y = Math.sin(e*Math.PI) * 0.12;
     }
+    if(!controls.autoRotate && performance.now()-_idle>2500) controls.autoRotate=true;
     controls.update();
     renderer.render(scene,camera);
   }

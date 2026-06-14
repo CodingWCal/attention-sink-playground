@@ -44,6 +44,12 @@ try {
   controls.enableZoom=true; controls.enableRotate=true; controls.enablePan=false;
   controls.minDistance=1.6; controls.maxDistance=7; controls.zoomSpeed=0.8;
   controls.target.set(0,0,0);
+  controls.autoRotate=true; controls.autoRotateSpeed=0.5;   // gentle idle spin
+  let _idle=performance.now();
+  canvas.addEventListener("pointerdown",()=>{controls.autoRotate=false;_idle=performance.now();});
+  canvas.addEventListener("pointermove",()=>{if(!controls.autoRotate)_idle=performance.now();});
+  canvas.addEventListener("pointerup",()=>{_idle=performance.now();});
+  canvas.addEventListener("wheel",()=>{controls.autoRotate=false;_idle=performance.now();},{passive:true});
   const box=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2,2,2)),
     new THREE.LineBasicMaterial({color:0xdce3ee}));
   scene.add(box);
@@ -67,6 +73,7 @@ try {
     requestAnimationFrame(loop);
     const tp=DATA.points[target];
     for(let i=0;i<n;i++){tmp.set(tp[i].x,tp[i].y,tp[i].z);cur[i].lerp(tmp,0.18);spheres[i].position.copy(cur[i]);}
+    if(!controls.autoRotate && performance.now()-_idle>2500) controls.autoRotate=true;
     controls.update();
     renderer.render(scene,camera);
   }

@@ -371,6 +371,7 @@ def _(SERIF, mo, n_heads, n_layers, overall_sink, peak_sink):
 .asp-bar > i {{ display:block; height:100%; background:#2E6BDB;
   animation:aspFill 1.1s ease-out both; }}
 .asp-cap {{ font:500 10px monospace; color:#7A828D; display:block; margin-top:4px; }}
+h3 {{ font-family:{SERIF} !important; font-weight:500; letter-spacing:-.012em; }}
 </style>
 
 <div style="font:600 11px {('IBM Plex Mono, monospace')};letter-spacing:.16em;
@@ -433,7 +434,7 @@ def _(ACCENT, BORDER, clean_token, disp, mo, tokens, truncated):
         # Escape: token text is user-derived and rendered as raw HTML here.
         label = html.escape(clean_token(t))
         chips.append(
-            f"""<span style="display:inline-block;margin:2px;padding:4px 9px;
+            f"""<span class="tok-chip{' tok-first' if first else ''}" style="display:inline-block;margin:2px;padding:4px 9px;
 border-radius:6px;font:500 13px 'IBM Plex Mono',monospace;
 border:1px solid {ACCENT if first else BORDER};
 background:{ACCENT if first else '#FFFFFF'};
@@ -451,6 +452,14 @@ color:{'#FFFFFF' if first else '#14181F'};">{label}</span>"""
 A model never sees letters or words. It chops text into **tokens** — sometimes a
 whole word, sometimes a piece of one, sometimes punctuation. The first token
 (filled blue) is the one everything will end up pointing at.
+
+<style>
+.tok-chip {{ transition:transform .14s ease, box-shadow .14s ease; }}
+.tok-chip:hover {{ transform:translateY(-3px); box-shadow:0 4px 12px rgba(20,24,31,.13); }}
+.tok-first {{ animation:tokPulse 2.2s ease-in-out infinite; }}
+@keyframes tokPulse {{ 0%,100% {{ box-shadow:0 0 0 0 rgba(46,107,219,.45); }}
+                       50% {{ box-shadow:0 0 0 7px rgba(46,107,219,0); }} }}
+</style>
 
 <div style="line-height:2.1;">{''.join(chips)}</div>{note}
 
@@ -522,6 +531,12 @@ try {
   const camera=new THREE.PerspectiveCamera(42,1,0.01,200);
   const controls=new OrbitControls(camera,renderer.domElement);
   controls.enableDamping=true; controls.dampingFactor=0.08; controls.enablePan=false;
+  controls.autoRotate=true; controls.autoRotateSpeed=0.45;   // gentle idle spin
+  let _idle=performance.now();
+  canvas.addEventListener("pointerdown",()=>{controls.autoRotate=false;_idle=performance.now();});
+  canvas.addEventListener("pointermove",()=>{if(!controls.autoRotate)_idle=performance.now();});
+  canvas.addEventListener("pointerup",()=>{_idle=performance.now();});
+  canvas.addEventListener("wheel",()=>{controls.autoRotate=false;_idle=performance.now();},{passive:true});
   scene.add(new THREE.AmbientLight(0xffffff,1));
   function tileTexture(text, bg, fg){
     const fontPx=72, pad=28, c=document.createElement("canvas"), x=c.getContext("2d");
@@ -584,6 +599,7 @@ try {
       tiles[i].position.z = Math.sin(e*Math.PI) * 0.45 * ((i%2)?1:-1);
       tiles[i].position.y = Math.sin(e*Math.PI) * 0.12;
     }
+    if(!controls.autoRotate && performance.now()-_idle>2500) controls.autoRotate=true;
     controls.update();
     renderer.render(scene,camera);
   }
@@ -624,7 +640,7 @@ try {
 
 # ------------------------------------------------------------ 02 · attention heatmap
 @app.cell
-def _(A, disp, mo, pd, pos_label, styled, tokens):
+def _(A, ACCENT, MONO, disp, mo, pd, pos_label, styled, tokens):
     import altair as _alt
 
     rows = []
@@ -658,6 +674,19 @@ def _(A, disp, mo, pd, pos_label, styled, tokens):
             ],
         )
     )
+    # Spotlight token 0's column — the sink — so the eye lands on the protagonist.
+    _spot = (
+        _alt.Chart(pd.DataFrame({"key": [labels[0]]}))
+        .mark_rect(fill=None, stroke=ACCENT, strokeWidth=3)
+        .encode(x=_alt.X("key:O", sort=labels))
+    )
+    _spot_lab = (
+        _alt.Chart(pd.DataFrame({"key": [labels[0]], "query": [labels[0]]}))
+        .mark_text(text="↓ the sink", dy=-11, color=ACCENT, fontSize=11,
+                   fontWeight=600, font=MONO)
+        .encode(x=_alt.X("key:O", sort=labels), y=_alt.Y("query:O", sort=labels))
+    )
+    heat = heat + _spot + _spot_lab
     mo.md(
         f"""### 02 · Attention — who listens to whom?
 
@@ -1067,6 +1096,12 @@ try {
   controls.enableZoom=true; controls.enableRotate=true; controls.enablePan=false;
   controls.minDistance=1.6; controls.maxDistance=7; controls.zoomSpeed=0.8;
   controls.target.set(0,0,0);
+  controls.autoRotate=true; controls.autoRotateSpeed=0.5;   // gentle idle spin
+  let _idle=performance.now();
+  canvas.addEventListener("pointerdown",()=>{controls.autoRotate=false;_idle=performance.now();});
+  canvas.addEventListener("pointermove",()=>{if(!controls.autoRotate)_idle=performance.now();});
+  canvas.addEventListener("pointerup",()=>{_idle=performance.now();});
+  canvas.addEventListener("wheel",()=>{controls.autoRotate=false;_idle=performance.now();},{passive:true});
   const box=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2,2,2)),
     new THREE.LineBasicMaterial({color:0xdce3ee}));
   scene.add(box);
@@ -1090,6 +1125,7 @@ try {
     requestAnimationFrame(loop);
     const tp=DATA.points[target];
     for(let i=0;i<n;i++){tmp.set(tp[i].x,tp[i].y,tp[i].z);cur[i].lerp(tmp,0.18);spheres[i].position.copy(cur[i]);}
+    if(!controls.autoRotate && performance.now()-_idle>2500) controls.autoRotate=true;
     controls.update();
     renderer.render(scene,camera);
   }

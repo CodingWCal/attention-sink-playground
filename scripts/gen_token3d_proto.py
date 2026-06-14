@@ -36,7 +36,9 @@ html = html.replace(
     "    window.__rc=(window.__rc||0)+1;window.__n=n;window.__t=t;"
     "    window.__draws=renderer.info.render.calls;"
     "    window.__minx=Math.min(...tiles.map(m=>m.position.x));"
-    "    window.__maxx=Math.max(...tiles.map(m=>m.position.x));window.__roww=rowW;",
+    "    window.__maxx=Math.max(...tiles.map(m=>m.position.x));window.__roww=rowW;"
+    "    window.__camx=camera.position.x;window.__camz=camera.position.z;"
+    "    window.__auto=controls.autoRotate;",
 )
 out_path = Path(__file__).parent.parent / ".threejs_proto" / "index.html"
 out_path.parent.mkdir(exist_ok=True)
