@@ -334,7 +334,7 @@ def _(attn, head_sel, layer_sel, seq_len):
 # ============================================================================
 
 
-# ------------------------------------------------------------ 1 · hero
+# ------------------------------------------------------------ hero
 @app.cell
 def _(SERIF, mo, n_heads, n_layers, overall_sink, peak_sink):
     s_avg = int(round(overall_sink * 100))
@@ -422,7 +422,7 @@ def _(mo, preset_dd, prompt_area, run_button):
     return
 
 
-# ------------------------------------------------------------ 3 · tokens
+# ------------------------------------------------------------ 01 · tokens
 @app.cell
 def _(ACCENT, BORDER, clean_token, disp, mo, tokens, truncated):
     import html
@@ -462,7 +462,7 @@ whole word, sometimes a piece of one, sometimes punctuation. The first token
     return
 
 
-# ------------------------------------------------------------ 4 · attention heatmap
+# ------------------------------------------------------------ 02 · attention heatmap
 @app.cell
 def _(A, disp, mo, pd, pos_label, styled, tokens):
     import altair as _alt
@@ -515,7 +515,7 @@ def _(heat, mo, styled):
     return
 
 
-# ------------------------------------------------------------ 5 · the sink
+# ------------------------------------------------------------ 03 · the sink
 @app.cell
 def _(
     ACCENT,
@@ -618,7 +618,7 @@ attention pools on token&nbsp;0.</div>
     return
 
 
-# ------------------------------------------------------------ 6 · why
+# ------------------------------------------------------------ 04 · why
 @app.cell
 def _(mo):
     mo.md(
@@ -639,7 +639,7 @@ bug; a learned defense.
     return
 
 
-# ------------------------------------------------------------ 7 · grows with depth
+# ------------------------------------------------------------ 05 · grows with depth
 @app.cell
 def _(head_sel, layer_sel, layerwise, mo, n_layers, pd, playing, styled, ticker):
     import altair as _alt
@@ -689,7 +689,7 @@ def _(head_sel, layer_sel, layerwise, mo, n_layers, pd, playing, styled, ticker)
     return
 
 
-# ------------------------------------------------------------ 6 · collapse scatter (PCA)
+# ------------------------------------------------------------ 06 · collapse scatter (2-D PCA)
 @app.cell
 def _(hidden, n_layers, np, pd, seq_len):
     # Make representational collapse VISIBLE. Two deliberate choices so the picture
@@ -981,7 +981,7 @@ try {
     return
 
 
-# ------------------------------------------------------------ 8 · experiment
+# ------------------------------------------------------------ 07 · experiment
 @app.cell
 def _(mo):
     run_experiment = mo.ui.run_button(label="Run the experiment ▸")
@@ -1069,7 +1069,7 @@ def _(ACCENT, mo, overall_sink, pd, prompt, run_experiment, run_inference, seq_l
     return
 
 
-# ------------------------------------------------------------ 7 · over-mixing meter (stretch)
+# ------------------------------------------------------------ 08 · over-mixing meter (stretch)
 @app.cell
 def _(ACCENT, collapse, deepest_collapse, layerwise, mo, n_layers, pd, styled):
     import altair as _alt
@@ -1135,7 +1135,7 @@ is not a reproduction of its formal measures._"""
     return
 
 
-# ------------------------------------------------------------ 8 · model-size comparison (stretch)
+# ------------------------------------------------------------ 09 · model-size comparison (stretch)
 @app.cell
 def _(mo):
     run_compare = mo.ui.run_button(label="Compare model sizes ▸")
@@ -1212,7 +1212,7 @@ def _(ACCENT, mo, pd, run_compare, run_inference, styled):
     return
 
 
-# ------------------------------------------------------------ 9 · so what
+# ------------------------------------------------------------ so what
 @app.cell
 def _(mo):
     mo.md(

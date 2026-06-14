@@ -30,9 +30,12 @@ A guided, top-to-bottom explorable. By the end you can explain — in your own w
 
 - **Tokenized prompt strip** — see exactly how your text splits into tokens (the first token is *not* the first letter).
 - **Live attention heatmap** — hover any cell for the exact weight; watch the first column glow.
-- **Attention-received bar chart + headline %** — the first-token spike, made undeniable.
-- **Layer-wise sink curve** — drag the layer slider and watch the sink strengthen with depth.
-- **"Break the first token" experiment** — run six prompt variants (repetition, length, punctuation-first…) and generate your own evidence.
+- **Attention-received bar chart + headline %, with a plain-English verdict** — the first-token spike, made undeniable, and a one-line read on how hard *your* sentence sinks.
+- **Layer-wise sink curve with ▶ play depth** — drag the layer slider or hit autoplay and watch the sink, the heatmap, and the collapse plots all strengthen with depth together.
+- **Collapse scatter (2-D) + an orbitable 3-D point cloud** — watch the content tokens' representations literally pull into a single clump as depth grows (over-mixing made visible); the 3-D view (three.js) lets you spin and scrub it.
+- **Over-mixing meter** — the sink and representational collapse plotted together, climbing in lock-step with depth.
+- **"Break the first token" experiment + leaderboard** — run six prompt variants (repetition, length, punctuation-first…) and see where *your* sentence ranks among them.
+- **Model-size comparison** — DistilGPT-2 (6 layers) vs GPT-2 (12), showing deeper models sink harder (extends to `gpt2-large`/`gpt2-xl` on a GPU).
 
 Inference is **gated behind a Run button** and the model is **cached**, so dragging a slider updates the visuals instantly — it feels like a playground, not a laggy form.
 
