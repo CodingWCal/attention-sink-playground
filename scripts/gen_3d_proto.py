@@ -54,12 +54,11 @@ for Li in (0, n_layers // 2, n_layers - 1):
 
 TEMPLATE = Path(__file__).with_name("_widget_template.html").read_text(encoding="utf-8")
 html = TEMPLATE.replace("__DATA__", json.dumps(data))
-# expose render stats for headless verification
+# expose render/camera stats for headless interaction verification
 html = html.replace(
-    "function render(){controls.update();renderer.render(scene,camera);}",
-    "function render(){controls.update();renderer.render(scene,camera);"
-    "window.__rc=(window.__rc||0)+1;window.__drawCalls=renderer.info.render.calls;"
-    "window.__n=spheres.length;}",
+    "    controls.update();\n    renderer.render(scene,camera);",
+    "    controls.update();\n    renderer.render(scene,camera);\n"
+    "    window.__camPos=camera.position.toArray();window.__n=spheres.length;window.__t=target;",
 )
 out_path = Path(__file__).parent.parent / ".threejs_proto" / "index.html"
 out_path.parent.mkdir(exist_ok=True)

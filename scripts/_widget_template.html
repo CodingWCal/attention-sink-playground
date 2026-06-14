@@ -2,7 +2,8 @@
 <style>
   html,body{margin:0;background:#F8FAFC;font-family:ui-sans-serif,sans-serif;}
   #wrap{position:relative;width:100%;height:520px;}
-  #cv{width:100%;height:100%;display:block;}
+  #cv{width:100%;height:100%;display:block;touch-action:none;cursor:grab;}
+  #cv:active{cursor:grabbing;}
   #ctrls{position:absolute;left:14px;bottom:14px;right:14px;display:flex;align-items:center;
     gap:12px;background:rgba(255,255,255,.82);backdrop-filter:blur(6px);border:1px solid #E2E8F0;
     border-radius:10px;padding:8px 12px;font:500 12px 'IBM Plex Mono',ui-monospace,monospace;color:#4E5663;}
@@ -39,7 +40,8 @@ try {
   const camera=new THREE.PerspectiveCamera(45,1,0.01,100);
   camera.position.set(1.9,1.4,2.3);
   const controls=new OrbitControls(camera,renderer.domElement);
-  controls.enableDamping=false;
+  controls.enableDamping=true; controls.dampingFactor=0.08;
+  controls.enableZoom=true; controls.enableRotate=true; controls.enablePan=false;
   const box=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2,2,2)),
     new THREE.LineBasicMaterial({color:0xdce3ee}));
   scene.add(box);
@@ -53,21 +55,23 @@ try {
     const p=DATA.points[0][i]; cur.push(new THREE.Vector3(p.x,p.y,p.z));
   }
   let target=0; const tmp=new THREE.Vector3();
-  function render(){controls.update();renderer.render(scene,camera);}
   function resize(){const w=wrap.clientWidth,h=wrap.clientHeight;renderer.setSize(w,h,false);
-    camera.aspect=w/h;camera.updateProjectionMatrix();render();}
+    camera.aspect=w/h;camera.updateProjectionMatrix();}
   window.addEventListener("resize",resize);
-  controls.addEventListener("change",render);
-  let raf=0;
-  function settle(){const tp=DATA.points[target];let moving=false;
-    for(let i=0;i<n;i++){tmp.set(tp[i].x,tp[i].y,tp[i].z);cur[i].lerp(tmp,0.16);
-      spheres[i].position.copy(cur[i]);if(cur[i].distanceToSquared(tmp)>1e-6)moving=true;}
-    render();raf=moving?requestAnimationFrame(settle):0;}
-  function go(L){target=L;if(!raf)settle();}
-  resize();go(0);
+  resize();
+  // Canonical continuous render loop: every frame eases points toward the target
+  // layer AND calls controls.update() so drag-orbit / scroll-zoom stay responsive.
+  function loop(){
+    requestAnimationFrame(loop);
+    const tp=DATA.points[target];
+    for(let i=0;i<n;i++){tmp.set(tp[i].x,tp[i].y,tp[i].z);cur[i].lerp(tmp,0.18);spheres[i].position.copy(cur[i]);}
+    controls.update();
+    renderer.render(scene,camera);
+  }
+  loop();
   const range=document.getElementById("range"),lnum=document.getElementById("lnum"),play=document.getElementById("play");
   range.max=String(DATA.layers-1);
-  function setLayer(L){range.value=String(L);lnum.textContent=String(L);go(L);}
+  function setLayer(L){range.value=String(L);lnum.textContent=String(L);target=L;}
   range.addEventListener("input",()=>setLayer(+range.value));
   let timer=null;
   play.addEventListener("click",()=>{
