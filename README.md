@@ -14,7 +14,9 @@ into something you can see, poke, and break.
 
 ## ▶ Open in molab
 
-**[Open the live notebook in molab](https://molab.marimo.io/notebooks/nb_3YFUCgvV9Pf9JPL24upDYw)** — click **Run it now** to launch the interactive version.
+**[Open the live notebook in molab](https://molab.marimo.io/notebooks/nb_ZoQHqZYu4dDZ6CihMoNukT)** — click **Run it now** to launch the interactive version.
+
+> ⏳ **First load takes ~30s** while molab cold-starts its compute and downloads GPT-2 (~500 MB). A brief loading flash on a cold backend is normal — give it a moment, and reload if needed. Subsequent runs are instant (the model is cached).
 
 Built for the **alphaXiv × marimo "Bring Research to Life" molab Notebook Competition #2.**
 
