@@ -382,9 +382,9 @@ arXiv:2504.02732 · COLM 2025</div>
 margin:.3em 0;">Why do language models pour attention onto their
 <em style="color:#2E6BDB;">first token</em>?</div>
 
-Every LLM has a strange habit: it dumps a huge share of attention onto a token
-that often means nothing. Type a sentence, watch it happen live, then **break it
-on purpose** — and learn why it's a feature, not a bug.
+Every language model has a strange habit: it dumps a huge share of attention onto
+a token that often means nothing. Type a sentence, watch it happen live, then
+**break it on purpose**, and see why the model does it deliberately.
 
 <div class="asp-stats">
   <div class="asp-stat">
@@ -416,22 +416,22 @@ def _(mo):
 background:#EEF3FB;margin:.3em 0;">
 <b>🟢 New here? The whole idea in one breath.</b> A language model reads text in chunks
 called <b>tokens</b>. <b>Attention</b> is how it decides which earlier chunks to focus on.
-Strangely, it pours most of that focus onto the <b>very first token</b> — even when that token
+Oddly, it pours most of that focus onto the <b>very first token</b>, even when that token
 means nothing. This notebook lets you watch it happen on your own sentence, break it on purpose,
-and see why it's a clever trick, not a bug.
+and see why the model does it deliberately.
 </div>
 
 <details>
-<summary><b>📖 Plain-English glossary</b> — expand if any word trips you up</summary>
+<summary><b>📖 Plain-English glossary</b> (expand if any word trips you up)</summary>
 
 <ul>
-<li><b>Token</b> — a chunk of text the model reads at once: a word, part of a word, or punctuation.</li>
-<li><b>Attention</b> — how much one token "looks at" each earlier token when working out meaning.</li>
-<li><b>Layer</b> — the model rethinks the text in stages stacked on top of each other; GPT-2 has 12.</li>
-<li><b>Head</b> — inside each layer, several attention patterns run in parallel ("heads"); GPT-2 has 12 per layer.</li>
-<li><b>Representation</b> — the model's internal list of numbers standing in for a token's current meaning.</li>
-<li><b>Attention sink</b> — the habit of dumping spare attention on the first token, like a parking spot.</li>
-<li><b>Over-mixing / collapse</b> — when tokens copy from each other so much their meanings blur into one; the sink is the defense against it.</li>
+<li><b>Token:</b> a chunk of text the model reads at once: a word, part of a word, or punctuation.</li>
+<li><b>Attention:</b> how much one token "looks at" each earlier token when working out meaning.</li>
+<li><b>Layer:</b> the model rethinks the text in stages stacked on top of each other. GPT-2 has 12.</li>
+<li><b>Head:</b> inside each layer, several attention patterns run in parallel ("heads"). GPT-2 has 12 per layer.</li>
+<li><b>Representation:</b> the model's internal list of numbers standing in for a token's current meaning.</li>
+<li><b>Attention sink:</b> the habit of dumping spare attention on the first token, like a parking spot.</li>
+<li><b>Over-mixing (collapse):</b> when tokens copy from each other so much their meanings blur into one. The sink is the defense against it.</li>
 </ul>
 </details>
 """
@@ -444,15 +444,15 @@ and see why it's a clever trick, not a bug.
 def _(mo, preset_dd, prompt_area, run_button):
     mo.vstack(
         [
-            mo.md("**Pick a preset** — or type your own and press Run."),
+            mo.md("**Pick a preset**, or type your own and press Run."),
             mo.hstack(
                 [preset_dd, run_button], justify="start", align="center", gap=1
             ),
             prompt_area,
             mo.md(
                 "<span style='font:500 12px monospace;color:#7A828D;'>💡 <b>Try:</b> "
-                "a single word · a word repeated 8× · a very long sentence · text that "
-                "starts with punctuation — and watch how the sink moves.</span>"
+                "a single word, a word repeated 8 times, a very long sentence, or text "
+                "that starts with punctuation, and watch how the sink moves.</span>"
             ),
         ],
         gap=0.6,
@@ -484,9 +484,9 @@ color:{'#FFFFFF' if first else '#14181F'};">{label}</span>"""
         else ""
     )
     mo.md(
-        f"""### 01 · Tokens — first, what is a token?
+        f"""### 01 · Tokens: first, what is a token?
 
-A model never sees letters or words. It chops text into **tokens** — sometimes a
+A model never sees letters or words. It chops text into **tokens**: sometimes a
 whole word, sometimes a piece of one, sometimes punctuation. The first token
 (filled blue) is the one everything will end up pointing at.
 
@@ -645,7 +645,7 @@ try {
   document.getElementById("replay").addEventListener("click",()=>{ startT=performance.now(); });
   ERR.style.display="none";
 } catch (e) {
-  ERR.textContent="3-D view couldn't load here — the token chips above show the same split.";
+  ERR.textContent="3-D view couldn't load here. The token chips above show the same split.";
   ERR.style.display="grid";
   console.error("token3d init failed", e);
 }
@@ -662,9 +662,9 @@ try {
         [
             mo.md(
                 "**See the split in 3-D.** Your sentence starts as one solid bar, then "
-                "**watch it break into the chunks the model actually reads** — drag to "
-                "orbit, and hit **↻ replay** to re-cut. Notice the `␣` on most tiles: the "
-                "leading space is *part of* the token, which is why the "
+                "**breaks into the chunks the model actually reads**. Drag to orbit, and "
+                "hit **↻ re-cut** to replay it. Notice the `␣` on most tiles: the leading "
+                "space is *part of* the token, which is why the "
                 "<span style='color:#2E6BDB;font-weight:600;'>first token</span> isn't "
                 "simply the first letter."
             ),
@@ -725,25 +725,25 @@ def _(A, ACCENT, MONO, disp, mo, pd, pos_label, styled, tokens):
     )
     heat = heat + _spot + _spot_lab
     mo.md(
-        f"""### 02 · Attention — who listens to whom?
+        f"""### 02 · Attention: who listens to whom?
 
 Each token decides how much to **listen to** each earlier token. Read a row
 left-to-right: that's where one token sends its attention. Watch the leftmost
-column (token 0) — it tends to glow.
+column (token 0). It tends to glow.
 
 <details>
-<summary><b>🔬 For the curious — the one critical gotcha</b></summary>
+<summary><b>🔬 For the curious: the one critical gotcha</b></summary>
 
 <p>Two implementation details make these numbers trustworthy:</p>
 <ul>
 <li><b>Eager attention.</b> The model is loaded with <code>attn_implementation="eager"</code>.
 Modern <code>transformers</code> defaults to fused SDPA/Flash kernels that return
-<code>None</code> for the attention weights — without this flag there would be no
+<code>None</code> for the attention weights, so without this flag there would be no
 heatmap at all.</li>
 <li><b>Query row 0 is excluded.</b> Under the causal mask the first token can only
 attend to itself, so its row is a trivial 100% on token 0. Every sink statistic
-here averages over query rows <i>1…n</i> only — otherwise that one degenerate row
-would inflate the number.</li>
+here averages over query rows <i>1 to n</i> only, since that one degenerate row
+would otherwise inflate the number.</li>
 </ul>
 </details>
 """
@@ -850,7 +850,7 @@ def _(SERIF, mo, overall_sink):
 <div style="border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;
 background:#FFFFFF;margin:.4em 0;">
 <div style="font:600 16px {SERIF};color:#14181F;margin-bottom:9px;">
-Your sentence has <span style="color:#2E6BDB;">{word}</span> — {pct}% of spare
+Your sentence has <span style="color:#2E6BDB;">{word}</span>: {pct}% of spare
 attention pools on token&nbsp;0.</div>
 <div class="asp-g-track"><div class="asp-g-fill" style="width:{pct}%;"></div></div>
 <div class="asp-g-row"><span>0%</span><span>{blurb}</span><span>100%</span></div>
@@ -1048,7 +1048,7 @@ try {
   });
   ERR.style.display="none";
 } catch (e) {
-  ERR.textContent="3-D view couldn't load here — the heatmap above shows the same pattern.";
+  ERR.textContent="3-D view couldn't load here. The heatmap above shows the same pattern.";
   ERR.style.display="grid";
   console.error("flow3d init failed", e);
 }
@@ -1064,11 +1064,11 @@ try {
     mo.vstack(
         [
             mo.md(
-                "**See the sink as a force field.** **Token 0** glows at the center; "
-                "every other token sends a stream of attention **flowing inward** to it "
-                "— busier, brighter streams mean more attention. Drag the **layer** "
+                "**See the sink as a force field.** **Token 0** glows at the center, "
+                "and every other token sends a stream of attention **flowing inward** to "
+                "it. Busier, brighter streams mean more attention. Drag the **layer** "
                 "slider or hit **▶ play depth** and watch the flow intensify as you go "
-                "deeper: the model leans harder and harder on that first-token hub."
+                "deeper: the model leans harder on that first-token hub the further in it gets."
             ),
             mo.Html(_frame),
         ],
@@ -1084,15 +1084,15 @@ def _(mo):
         """### 04 · Why would a model *do* this?
 
 Imagine a classroom where everyone keeps copying a little from their neighbours'
-notes. A bit helps — but copy round after round and every page turns into the
+notes. A bit helps, but copy round after round and every page turns into the
 same blurry soup. Nobody keeps an original thought. Researchers call that
-**over-mixing** (a.k.a. rank / representational collapse).
+**over-mixing** (also known as rank or representational collapse).
 
 A Transformer mixes tokens the same way, layer after layer. The paper's answer:
-the model learns to **dump spare attention on the first token** — a near-empty
-parking spot — instead of forcing more mixing between tokens that actually
-matter. The sink is a *release valve* that keeps representations distinct. Not a
-bug; a learned defense.
+the model learns to **dump spare attention on the first token**, a near-empty
+parking spot, instead of forcing more mixing between tokens that actually matter.
+The sink is a *release valve* that keeps representations distinct, and the model
+figured this out on its own.
 """
     )
     return
@@ -1130,10 +1130,10 @@ def _(head_sel, layer_sel, layerwise, mo, n_layers, pd, playing, styled, ticker)
     mo.vstack(
         [
             mo.md(
-                "### 05 · It grows with depth\n\nDrag the **layer** slider — or hit "
-                "**▶ play depth** — and watch the heatmap, this curve, and the "
+                "### 05 · It grows with depth\n\nDrag the **layer** slider, or hit "
+                "**▶ play depth**, and watch the heatmap, this curve, and the "
                 "collapse plot just below all move together. Averaged over heads, "
-                "the sink generally *strengthens* in deeper layers — exactly what "
+                "the sink generally *strengthens* in deeper layers, exactly what "
                 "the paper predicts: deeper networks need stronger sinks to avoid "
                 "collapse."
             ),
@@ -1242,40 +1242,40 @@ def _(ACCENT, L, MONO, MUTED, clean_token, collapse, mo, scatter_all, styled, to
         )
     )
     _sim = collapse[L] if L < len(collapse) else float("nan")
-    _sim_txt = f"{_sim:.0%}" if _sim == _sim else "—"   # nan-safe (single-token prompts)
+    _sim_txt = f"{_sim:.0%}" if _sim == _sim else "n/a"   # nan-safe (single-token prompts)
 
     mo.vstack(
         [
             mo.md(
                 f"""### 06 · Watch the tokens collapse
 
-Each dot is one token's **internal representation** — *direction only*
-(unit-normalized), flattened to 2-D. Drag the **layer** slider above, or hit
+Each dot is one token's **internal representation**, reduced to *direction only*
+(unit-normalized) and flattened to 2-D. Drag the **layer** slider above, or hit
 **▶ play depth**, and watch the content tokens
 (<span style="color:#9DB3D6;font-weight:600;">pale</span>) **pull together into a
 single clump** as you go deeper: by this layer they're **{_sim_txt} similar** to
-one another — exactly the *over-mixing* the paper warns about. The
+one another, which is the *over-mixing* the paper warns about. The
 <span style="color:{ACCENT};font-weight:600;">first token</span> is highlighted
 for reference (it sits apart in the early layers); the sink is what keeps the
 meaningful tokens from collapsing even faster.
 
 <details>
-<summary><b>🔬 For the curious — how we measure "collapse"</b></summary>
+<summary><b>🔬 For the curious: how we measure "collapse"</b></summary>
 
 <p>This is a 2-D PCA of the token representations, with two deliberate choices so
 it matches the paper's notion of <i>representational collapse</i>:</p>
 <ul>
 <li><b>Direction, not magnitude.</b> Each token vector is unit-normalized before
-projecting, so you're seeing the <i>angle</i> between representations — exactly
+projecting, so you're seeing the <i>angle</i> between representations, which is
 what cosine similarity (and the over-mixing meter in §08) measures. Deep layers
 inflate vector norms; without normalizing, the dots would drift apart by magnitude
 and hide the collapse.</li>
 <li><b>Each layer is re-centered.</b> We subtract each layer's content-token
-centroid, so the cloud's <i>size</i> is what changes on screen — that shrinking
-spread <i>is</i> the collapse — rather than the cloud drifting around the frame.</li>
+centroid, so the cloud's <i>size</i> is what changes on screen. That shrinking
+spread <i>is</i> the collapse, rather than the cloud drifting around the frame.</li>
 </ul>
 <p>It's an illustration in the spirit of the paper, not a reproduction of its
-formal rank measure — but the trend (spread up top, a tight clump deep down) is
+formal rank measure, but the trend (spread up top, a tight clump deep down) is
 the real over-mixing the sink defends against.</p>
 </details>"""
             ),
@@ -1429,7 +1429,7 @@ try {
   });
   ERR.style.display="none";   // success -> reveal the canvas
 } catch (e) {
-  ERR.textContent="3-D view couldn't load here — the 2-D chart above tells the same story.";
+  ERR.textContent="3-D view couldn't load here. The 2-D chart above tells the same story.";
   ERR.style.display="grid";
   console.error("threejs init failed", e);
 }
@@ -1451,7 +1451,7 @@ try {
         [
             mo.md(
                 "**Prefer it in 3-D? Spin the same cloud.** Same direction-only "
-                "representations, now with a third principal component — **drag to "
+                "representations, now with a third principal component. **Drag to "
                 "orbit**, scroll to zoom, and hit **▶ play depth** to watch the "
                 "content tokens collapse inward while the "
                 "<span style='color:#2E6BDB;font-weight:600;'>first token</span> "
@@ -1542,8 +1542,8 @@ def _(ACCENT, mo, overall_sink, pd, prompt, run_experiment, run_inference, seq_l
         [
             mo.md(
                 f"The <span style='color:#D9634F;font-weight:600;'>★ your prompt</span> "
-                f"bar is your current sentence (*“{prompt[:48]}{'…' if len(prompt) > 48 else ''}”*) "
-                f"— see where it ranks against the six controlled variants."
+                f"bar is your current sentence (*“{prompt[:48]}{'…' if len(prompt) > 48 else ''}”*). "
+                f"See where it ranks against the six controlled variants."
             ),
             mo.ui.altair_chart(styled(exp_chart, h=360)),
         ],
@@ -1598,10 +1598,10 @@ def _(ACCENT, collapse, deepest_collapse, layerwise, mo, n_layers, pd, styled):
             mo.md(
                 f"""### 08 · Feel the collapse  _(stretch)_
 
-The sink is the model's *defense* — here's what it defends against. The
+The sink is the model's *defense*, and this is what it defends against. The
 <span style="color:#D9634F;font-weight:600;">red</span> line is how similar the
 content tokens' internal representations are to each other at each layer (mean
-cosine similarity, token 0 excluded); higher means they're blurring together —
+cosine similarity, token 0 excluded); higher means they're blurring together,
 the **over-mixing** the paper warns about. The
 <span style="color:#2E6BDB;font-weight:600;">blue</span> line is the sink. They
 climb together with depth: as mixing pushes representations toward collapse
@@ -1628,9 +1628,9 @@ def _(mo):
                 "### 09 · Scale it up  _(stretch)_\n\nThe paper's most demo-friendly "
                 "result: **bigger, deeper models sink harder.** Compare DistilGPT-2 "
                 "(6 layers) against GPT-2 (12 layers) on the same prompt, with depth "
-                "normalized to 0–1 so they line up. On a molab GPU you can extend the "
-                "list to `gpt2-large` and `gpt2-xl` and watch the trend continue — the "
-                "GPU does real, motivated work here."
+                "normalized to a 0-to-1 scale so they line up. On a molab GPU you can "
+                "extend the list to `gpt2-large` and `gpt2-xl` and watch the trend "
+                "continue. The GPU does real work there."
             ),
             run_compare,
         ],
@@ -1701,7 +1701,7 @@ def _(mo):
     mo.md(
         """### So what?
 
-Attention sinks aren't wasted compute or a quirk to patch away — they're a
+Attention sinks aren't wasted compute or a quirk to patch away. They're a
 **learned defense mechanism** against over-mixing, and they get stronger as
 models get deeper and contexts get longer. The lesson: even the "boring",
 ever-present patterns inside a model can be doing essential work. That's why
