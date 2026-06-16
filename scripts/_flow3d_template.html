@@ -1,7 +1,7 @@
 <!doctype html><html><head><meta charset="utf-8"/>
 <style>
   html,body{margin:0;background:#F8FAFC;font-family:ui-sans-serif,sans-serif;}
-  #wrap{position:relative;width:100%;height:480px;}
+  #wrap{position:relative;width:100%;height:500px;}
   #cv{width:100%;height:100%;display:block;touch-action:none;cursor:grab;}
   #cv:active{cursor:grabbing;}
   #ctrls{position:absolute;left:14px;bottom:14px;right:14px;display:flex;align-items:center;
@@ -20,7 +20,7 @@
     <button id="play" class="paused">&#9654; play depth</button>
     <span class="lab">layer <b id="lnum">0</b></span>
     <input id="range" type="range" min="0" max="11" value="0" step="1"/>
-    <span class="lab" style="color:#7A828D;flex:1;">every token's attention, bending back to token 0 &middot; drag to orbit</span>
+    <span class="lab" style="color:#7A828D;flex:1;">attention flowing inward to token 0 &middot; drag to orbit</span>
   </div>
   <div id="err">Rendering the flow&hellip;</div>
 </div>
@@ -37,10 +37,10 @@ try {
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio,2));
   const scene=new THREE.Scene();
-  const camera=new THREE.PerspectiveCamera(42,1,0.01,200);
+  const camera=new THREE.PerspectiveCamera(42,1,0.01,500);
   const controls=new OrbitControls(camera,renderer.domElement);
   controls.enableDamping=true; controls.dampingFactor=0.08; controls.enablePan=false;
-  controls.autoRotate=true; controls.autoRotateSpeed=0.5;
+  controls.autoRotate=true; controls.autoRotateSpeed=0.6;
   let _idle=performance.now();
   canvas.addEventListener("pointerdown",()=>{controls.autoRotate=false;_idle=performance.now();});
   canvas.addEventListener("pointermove",()=>{if(!controls.autoRotate)_idle=performance.now();});
@@ -48,43 +48,60 @@ try {
   canvas.addEventListener("wheel",()=>{controls.autoRotate=false;_idle=performance.now();},{passive:true});
   scene.add(new THREE.AmbientLight(0xffffff,1));
 
-  const ACCENT=new THREE.Color(DATA.accent), GREY=new THREE.Color("#C9D6E8");
-  const n=DATA.tokens.length, SP=0.9;
-  const pos=i=>new THREE.Vector3((i-(n-1)/2)*SP, 0, 0);
-
-  function labelSprite(text, color){
-    const fontPx=64, c=document.createElement("canvas"), x=c.getContext("2d");
-    x.font=`600 ${fontPx}px 'IBM Plex Mono', monospace`;
-    const w=Math.ceil(x.measureText(text).width)+24, h=fontPx+18;
+  const ACCENT=new THREE.Color(DATA.accent), GREY=new THREE.Color("#9DB3D6");
+  const N=DATA.tokens.length;
+  // Radial "hub": token 0 at the centre, the rest spaced on a ring (in the XZ
+  // plane); ring grows with token count so labels never collide. Arcs bow UP in y.
+  const R=Math.max(2.8, 0.55*N);
+  const CTR=new THREE.Vector3(0,0,0);
+  function nodePos(i){
+    if(i===0) return CTR.clone();
+    const a=2*Math.PI*(i-1)/Math.max(1,N-1);
+    return new THREE.Vector3(Math.cos(a)*R, 0, Math.sin(a)*R);
+  }
+  function labelSprite(text, color, big){
+    const fp=64, c=document.createElement("canvas"), x=c.getContext("2d");
+    x.font=`600 ${fp}px 'IBM Plex Mono', monospace`;
+    const w=Math.ceil(x.measureText(text).width)+24, h=fp+18;
     c.width=w; c.height=h;
-    x.font=`600 ${fontPx}px 'IBM Plex Mono', monospace`;
+    x.font=`600 ${fp}px 'IBM Plex Mono', monospace`;
     x.fillStyle=color; x.textBaseline="middle"; x.textAlign="center";
     x.fillText(text,w/2,h/2);
     const t=new THREE.CanvasTexture(c); t.anisotropy=4;
-    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));
-    sp.scale.set(0.0085*w, 0.0085*h, 1);
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false}));
+    const s=big?0.011:0.0072; sp.scale.set(s*w, s*h, 1);
     return sp;
   }
-  // nodes + labels
-  for(let i=0;i<n;i++){
-    const first=i===0, p=pos(i);
-    const node=new THREE.Mesh(new THREE.SphereGeometry(first?0.17:0.10,20,20),
+  for(let i=0;i<N;i++){
+    const p=nodePos(i), first=i===0;
+    const node=new THREE.Mesh(new THREE.SphereGeometry(first?0.34:0.10,24,24),
       new THREE.MeshBasicMaterial({color:first?ACCENT:GREY}));
     node.position.copy(p); scene.add(node);
-    const lab=labelSprite(DATA.tokens[i]||"∅", first?"#2E6BDB":"#7A828D");
-    lab.position.set(p.x, -0.42, 0); scene.add(lab);
+    const lab=labelSprite(DATA.tokens[i]||"∅", first?"#2E6BDB":"#5A6472", first);
+    if(first){ lab.position.set(0,0.8,0); }
+    else { const d=p.clone().multiplyScalar(1.16); lab.position.set(d.x,0.18,d.z); }
+    scene.add(lab);
   }
-  // arcs: every token q>=1 -> token 0, opacity = its attention to token 0
-  const p0=pos(0), arcs=[];
-  for(let q=1;q<n;q++){
-    const pq=pos(q);
-    const lift=0.5+0.18*Math.abs(q);
-    const ctrl=new THREE.Vector3((pq.x+p0.x)/2, lift, 0.0);
-    const curve=new THREE.QuadraticBezierCurve3(pq, ctrl, p0);
-    const geo=new THREE.TubeGeometry(curve, 26, 0.028, 8, false);
-    const mat=new THREE.MeshBasicMaterial({color:ACCENT, transparent:true, opacity:0.1});
-    const mesh=new THREE.Mesh(geo,mat); scene.add(mesh);
-    arcs.push({q, mat});
+  // halo ring around token 0 so the sink reads as the hub
+  const halo=new THREE.Mesh(new THREE.TorusGeometry(0.55,0.02,8,40),
+    new THREE.MeshBasicMaterial({color:ACCENT,transparent:true,opacity:0.5}));
+  halo.rotation.x=Math.PI/2; scene.add(halo);
+
+  // one bowed arc per token -> centre, plus 2 dots that flow inward along it
+  const arcs=[];
+  for(let q=1;q<N;q++){
+    const pq=nodePos(q);
+    const mid=pq.clone().multiplyScalar(0.5); mid.y=1.4;
+    const curve=new THREE.QuadraticBezierCurve3(pq, mid, CTR);
+    const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,32,0.018,8,false),
+      new THREE.MeshBasicMaterial({color:ACCENT,transparent:true,opacity:0.08}));
+    scene.add(tube);
+    const dots=[0,0.5].map(ph=>{
+      const d=new THREE.Mesh(new THREE.SphereGeometry(0.07,12,12),
+        new THREE.MeshBasicMaterial({color:ACCENT,transparent:true,opacity:0}));
+      scene.add(d); return {mesh:d, ph};
+    });
+    arcs.push({q, curve, tube, dots, w:0});
   }
 
   let L=0;
@@ -93,10 +110,12 @@ try {
     document.getElementById("lnum").textContent=String(li);
     document.getElementById("range").value=String(li);
     const row=DATA.w[li]||[];
-    for(const a of arcs){ a.mat.opacity = 0.08 + 0.9*Math.min(1, (row[a.q]||0)); }
+    for(const a of arcs){
+      a.w=Math.min(1, row[a.q]||0);
+      a.tube.material.opacity = 0.05 + 0.30*a.w;
+    }
   }
 
-  const rowW=(n-1)*SP;
   let fitted=false;
   function resize(){
     const w=wrap.clientWidth,h=wrap.clientHeight;
@@ -104,17 +123,26 @@ try {
     camera.aspect=w/h; camera.updateProjectionMatrix();
     if(!fitted){
       const vF=camera.fov*Math.PI/180, hF=2*Math.atan(Math.tan(vF/2)*camera.aspect);
-      const z=Math.max((rowW/2+0.6)/Math.tan(hF/2), 2.4/Math.tan(vF/2))+1.0;
-      camera.position.set(0,1.0,z);
-      controls.minDistance=z*0.5; controls.maxDistance=z*2.4; controls.target.set(0,0.3,0);
+      const d=(R*1.25)/Math.tan(Math.min(vF,hF)/2)+1.5;
+      camera.position.set(0, d*0.62, d*0.86);
+      controls.minDistance=d*0.45; controls.maxDistance=d*2.4; controls.target.set(0,0.2,0);
       controls.update(); fitted=true;
     }
   }
   window.addEventListener("resize",resize); resize();
   setLayer(0);
 
+  const t0=performance.now();
   function loop(){
     requestAnimationFrame(loop);
+    const el=(performance.now()-t0)/1000;
+    for(const a of arcs){
+      for(const dt of a.dots){
+        const t=(el*0.30 + dt.ph) % 1;             // flow ring -> centre
+        dt.mesh.position.copy(a.curve.getPoint(t));
+        dt.mesh.material.opacity = (0.15 + 0.85*a.w) * Math.sin(t*Math.PI);  // fade in/out
+      }
+    }
     if(!controls.autoRotate && performance.now()-_idle>2500) controls.autoRotate=true;
     controls.update();
     renderer.render(scene,camera);

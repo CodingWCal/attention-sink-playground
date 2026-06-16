@@ -42,7 +42,8 @@ html = html.replace(
     "    controls.update();\n    renderer.render(scene,camera);\n"
     "    window.__rc=(window.__rc||0)+1;window.__arcs=arcs.length;window.__L=L;"
     "    window.__auto=controls.autoRotate;window.__set=setLayer;"
-    "    window.__opNow=()=>arcs.map(a=>+a.mat.opacity.toFixed(3));",
+    "    window.__opNow=()=>arcs.map(a=>+a.tube.material.opacity.toFixed(3));"
+    "    window.__dot=arcs.length?arcs[0].dots[0].mesh.position.toArray().map(v=>+v.toFixed(3)):null;",
 )
 out_path = Path(__file__).parent.parent / ".threejs_proto" / "index.html"
 out_path.parent.mkdir(exist_ok=True)
