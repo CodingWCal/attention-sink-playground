@@ -407,6 +407,38 @@ on purpose** — and learn why it's a feature, not a bug.
     return
 
 
+# ------------------------------------------------------------ new here? primer + glossary
+@app.cell
+def _(mo):
+    mo.md(
+        """
+<div style="border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;
+background:#EEF3FB;margin:.3em 0;">
+<b>🟢 New here? The whole idea in one breath.</b> A language model reads text in chunks
+called <b>tokens</b>. <b>Attention</b> is how it decides which earlier chunks to focus on.
+Strangely, it pours most of that focus onto the <b>very first token</b> — even when that token
+means nothing. This notebook lets you watch it happen on your own sentence, break it on purpose,
+and see why it's a clever trick, not a bug.
+</div>
+
+<details>
+<summary><b>📖 Plain-English glossary</b> — expand if any word trips you up</summary>
+
+<ul>
+<li><b>Token</b> — a chunk of text the model reads at once: a word, part of a word, or punctuation.</li>
+<li><b>Attention</b> — how much one token "looks at" each earlier token when working out meaning.</li>
+<li><b>Layer</b> — the model rethinks the text in stages stacked on top of each other; GPT-2 has 12.</li>
+<li><b>Head</b> — inside each layer, several attention patterns run in parallel ("heads"); GPT-2 has 12 per layer.</li>
+<li><b>Representation</b> — the model's internal list of numbers standing in for a token's current meaning.</li>
+<li><b>Attention sink</b> — the habit of dumping spare attention on the first token, like a parking spot.</li>
+<li><b>Over-mixing / collapse</b> — when tokens copy from each other so much their meanings blur into one; the sink is the defense against it.</li>
+</ul>
+</details>
+"""
+    )
+    return
+
+
 # ------------------------------------------------------------ controls panel
 @app.cell
 def _(mo, preset_dd, prompt_area, run_button):
@@ -417,6 +449,11 @@ def _(mo, preset_dd, prompt_area, run_button):
                 [preset_dd, run_button], justify="start", align="center", gap=1
             ),
             prompt_area,
+            mo.md(
+                "<span style='font:500 12px monospace;color:#7A828D;'>💡 <b>Try:</b> "
+                "a single word · a word repeated 8× · a very long sentence · text that "
+                "starts with punctuation — and watch how the sink moves.</span>"
+            ),
         ],
         gap=0.6,
     )
@@ -819,6 +856,190 @@ attention pools on token&nbsp;0.</div>
 <div class="asp-g-row"><span>0%</span><span>{blurb}</span><span>100%</span></div>
 </div>
 """
+    )
+    return
+
+
+# ------------------------------------------------------------ 03c · attention flow (three.js)
+@app.cell
+def _(ACCENT, attn, clean_token, disp, n_layers, tokens):
+    import json as _json
+
+    # Per layer, each token's attention to token 0 (averaged over heads). Capped at
+    # 24 tokens so the arcs stay legible. This is the data the 3-D "force field" draws.
+    _cap = min(disp, 24)
+    _w = [
+        [float(attn[li, :, q, 0].mean()) for q in range(_cap)]
+        for li in range(n_layers)
+    ]
+    flow_json = _json.dumps(
+        {
+            "accent": ACCENT,
+            "tokens": [clean_token(t) for t in tokens[:_cap]],
+            "w": _w,
+        }
+    )
+    return (flow_json,)
+
+
+@app.cell
+def _(flow_json, mo):
+    # The sink as a "force field": every token's attention drawn as an arc bending
+    # back to token 0, brightness = the weight. Same verified srcdoc + continuous-
+    # loop + idle-spin + graceful-fallback pattern as the other 3-D widgets.
+    _tpl = """<!doctype html><html><head><meta charset="utf-8"/>
+<style>
+  html,body{margin:0;background:#F8FAFC;font-family:ui-sans-serif,sans-serif;}
+  #wrap{position:relative;width:100%;height:480px;}
+  #cv{width:100%;height:100%;display:block;touch-action:none;cursor:grab;}
+  #cv:active{cursor:grabbing;}
+  #ctrls{position:absolute;left:14px;bottom:14px;right:14px;display:flex;align-items:center;
+    gap:12px;background:rgba(255,255,255,.82);backdrop-filter:blur(6px);border:1px solid #E2E8F0;
+    border-radius:10px;padding:8px 12px;font:500 12px 'IBM Plex Mono',ui-monospace,monospace;color:#4E5663;}
+  #play{border:1px solid #2E6BDB;background:#2E6BDB;color:#fff;border-radius:7px;padding:5px 12px;cursor:pointer;font:inherit;}
+  #play.paused{background:#fff;color:#2E6BDB;}
+  #range{flex:1;accent-color:#2E6BDB;}
+  .lab{white-space:nowrap;}
+  #err{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;
+    color:#7A828D;font-size:13px;background:#F8FAFC;}
+</style></head><body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+  <div id="ctrls">
+    <button id="play" class="paused">&#9654; play depth</button>
+    <span class="lab">layer <b id="lnum">0</b></span>
+    <input id="range" type="range" min="0" max="11" value="0" step="1"/>
+    <span class="lab" style="color:#7A828D;flex:1;">every token's attention, bending back to token 0 &middot; drag to orbit</span>
+  </div>
+  <div id="err">Rendering the flow&hellip;</div>
+</div>
+<script type="importmap">
+{ "imports": { "three": "https://esm.sh/three@0.160.0", "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+const DATA = __DATA__;
+const ERR = document.getElementById("err");
+try {
+  const THREE = await import("three");
+  const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+  const wrap=document.getElementById("wrap"), canvas=document.getElementById("cv");
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(42,1,0.01,200);
+  const controls=new OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true; controls.dampingFactor=0.08; controls.enablePan=false;
+  controls.autoRotate=true; controls.autoRotateSpeed=0.5;
+  let _idle=performance.now();
+  canvas.addEventListener("pointerdown",()=>{controls.autoRotate=false;_idle=performance.now();});
+  canvas.addEventListener("pointermove",()=>{if(!controls.autoRotate)_idle=performance.now();});
+  canvas.addEventListener("pointerup",()=>{_idle=performance.now();});
+  canvas.addEventListener("wheel",()=>{controls.autoRotate=false;_idle=performance.now();},{passive:true});
+  scene.add(new THREE.AmbientLight(0xffffff,1));
+
+  const ACCENT=new THREE.Color(DATA.accent), GREY=new THREE.Color("#C9D6E8");
+  const n=DATA.tokens.length, SP=0.9;
+  const pos=i=>new THREE.Vector3((i-(n-1)/2)*SP, 0, 0);
+  function labelSprite(text, color){
+    const fontPx=64, c=document.createElement("canvas"), x=c.getContext("2d");
+    x.font=`600 ${fontPx}px 'IBM Plex Mono', monospace`;
+    const w=Math.ceil(x.measureText(text).width)+24, h=fontPx+18;
+    c.width=w; c.height=h;
+    x.font=`600 ${fontPx}px 'IBM Plex Mono', monospace`;
+    x.fillStyle=color; x.textBaseline="middle"; x.textAlign="center";
+    x.fillText(text,w/2,h/2);
+    const t=new THREE.CanvasTexture(c); t.anisotropy=4;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));
+    sp.scale.set(0.0085*w, 0.0085*h, 1);
+    return sp;
+  }
+  for(let i=0;i<n;i++){
+    const first=i===0, p=pos(i);
+    const node=new THREE.Mesh(new THREE.SphereGeometry(first?0.17:0.10,20,20),
+      new THREE.MeshBasicMaterial({color:first?ACCENT:GREY}));
+    node.position.copy(p); scene.add(node);
+    const lab=labelSprite(DATA.tokens[i]||"∅", first?"#2E6BDB":"#7A828D");
+    lab.position.set(p.x, -0.42, 0); scene.add(lab);
+  }
+  const p0=pos(0), arcs=[];
+  for(let q=1;q<n;q++){
+    const pq=pos(q);
+    const lift=0.5+0.18*Math.abs(q);
+    const ctrl=new THREE.Vector3((pq.x+p0.x)/2, lift, 0.0);
+    const curve=new THREE.QuadraticBezierCurve3(pq, ctrl, p0);
+    const geo=new THREE.TubeGeometry(curve, 26, 0.028, 8, false);
+    const mat=new THREE.MeshBasicMaterial({color:ACCENT, transparent:true, opacity:0.1});
+    const mesh=new THREE.Mesh(geo,mat); scene.add(mesh);
+    arcs.push({q, mat});
+  }
+  let L=0;
+  function setLayer(li){
+    L=li;
+    document.getElementById("lnum").textContent=String(li);
+    document.getElementById("range").value=String(li);
+    const row=DATA.w[li]||[];
+    for(const a of arcs){ a.mat.opacity = 0.08 + 0.9*Math.min(1, (row[a.q]||0)); }
+  }
+  const rowW=(n-1)*SP;
+  let fitted=false;
+  function resize(){
+    const w=wrap.clientWidth,h=wrap.clientHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect=w/h; camera.updateProjectionMatrix();
+    if(!fitted){
+      const vF=camera.fov*Math.PI/180, hF=2*Math.atan(Math.tan(vF/2)*camera.aspect);
+      const z=Math.max((rowW/2+0.6)/Math.tan(hF/2), 2.4/Math.tan(vF/2))+1.0;
+      camera.position.set(0,1.0,z);
+      controls.minDistance=z*0.5; controls.maxDistance=z*2.4; controls.target.set(0,0.3,0);
+      controls.update(); fitted=true;
+    }
+  }
+  window.addEventListener("resize",resize); resize();
+  setLayer(0);
+  function loop(){
+    requestAnimationFrame(loop);
+    if(!controls.autoRotate && performance.now()-_idle>2500) controls.autoRotate=true;
+    controls.update();
+    renderer.render(scene,camera);
+  }
+  loop();
+  const range=document.getElementById("range");
+  range.max=String(DATA.w.length-1);
+  range.addEventListener("input",()=>setLayer(+range.value));
+  let timer=null;
+  const play=document.getElementById("play");
+  play.addEventListener("click",()=>{
+    if(timer){clearInterval(timer);timer=null;play.classList.add("paused");play.innerHTML="&#9654; play depth";}
+    else{play.classList.remove("paused");play.textContent="❚❚ pause";
+      timer=setInterval(()=>setLayer((L+1)%DATA.w.length),800);}
+  });
+  ERR.style.display="none";
+} catch (e) {
+  ERR.textContent="3-D view couldn't load here — the heatmap above shows the same pattern.";
+  ERR.style.display="grid";
+  console.error("flow3d init failed", e);
+}
+</script></body></html>"""
+    import html as _html
+
+    _doc = _tpl.replace("__DATA__", flow_json)
+    _frame = (
+        '<iframe sandbox="allow-scripts allow-same-origin" '
+        'style="width:100%;height:500px;border:1px solid #E2E8F0;border-radius:12px;" '
+        'srcdoc="' + _html.escape(_doc, quote=True) + '"></iframe>'
+    )
+    mo.vstack(
+        [
+            mo.md(
+                "**See the sink as a force field.** Each glowing line is one token's "
+                "attention bending back to **token 0** — brighter means more attention. "
+                "Drag the **layer** slider or hit **▶ play depth**, and watch the whole "
+                "bundle light up as you go deeper: the model leans harder and harder on "
+                "that first-token parking spot."
+            ),
+            mo.Html(_frame),
+        ],
+        gap=0.6,
     )
     return
 

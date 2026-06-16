@@ -1,0 +1,139 @@
+<!doctype html><html><head><meta charset="utf-8"/>
+<style>
+  html,body{margin:0;background:#F8FAFC;font-family:ui-sans-serif,sans-serif;}
+  #wrap{position:relative;width:100%;height:480px;}
+  #cv{width:100%;height:100%;display:block;touch-action:none;cursor:grab;}
+  #cv:active{cursor:grabbing;}
+  #ctrls{position:absolute;left:14px;bottom:14px;right:14px;display:flex;align-items:center;
+    gap:12px;background:rgba(255,255,255,.82);backdrop-filter:blur(6px);border:1px solid #E2E8F0;
+    border-radius:10px;padding:8px 12px;font:500 12px 'IBM Plex Mono',ui-monospace,monospace;color:#4E5663;}
+  #play{border:1px solid #2E6BDB;background:#2E6BDB;color:#fff;border-radius:7px;padding:5px 12px;cursor:pointer;font:inherit;}
+  #play.paused{background:#fff;color:#2E6BDB;}
+  #range{flex:1;accent-color:#2E6BDB;}
+  .lab{white-space:nowrap;}
+  #err{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;
+    color:#7A828D;font-size:13px;background:#F8FAFC;}
+</style></head><body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+  <div id="ctrls">
+    <button id="play" class="paused">&#9654; play depth</button>
+    <span class="lab">layer <b id="lnum">0</b></span>
+    <input id="range" type="range" min="0" max="11" value="0" step="1"/>
+    <span class="lab" style="color:#7A828D;flex:1;">every token's attention, bending back to token 0 &middot; drag to orbit</span>
+  </div>
+  <div id="err">Rendering the flow&hellip;</div>
+</div>
+<script type="importmap">
+{ "imports": { "three": "https://esm.sh/three@0.160.0", "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+const DATA = __DATA__;   // {accent, tokens:[...], w:[[per-token attn->token0] per layer]}
+const ERR = document.getElementById("err");
+try {
+  const THREE = await import("three");
+  const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+  const wrap=document.getElementById("wrap"), canvas=document.getElementById("cv");
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(42,1,0.01,200);
+  const controls=new OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true; controls.dampingFactor=0.08; controls.enablePan=false;
+  controls.autoRotate=true; controls.autoRotateSpeed=0.5;
+  let _idle=performance.now();
+  canvas.addEventListener("pointerdown",()=>{controls.autoRotate=false;_idle=performance.now();});
+  canvas.addEventListener("pointermove",()=>{if(!controls.autoRotate)_idle=performance.now();});
+  canvas.addEventListener("pointerup",()=>{_idle=performance.now();});
+  canvas.addEventListener("wheel",()=>{controls.autoRotate=false;_idle=performance.now();},{passive:true});
+  scene.add(new THREE.AmbientLight(0xffffff,1));
+
+  const ACCENT=new THREE.Color(DATA.accent), GREY=new THREE.Color("#C9D6E8");
+  const n=DATA.tokens.length, SP=0.9;
+  const pos=i=>new THREE.Vector3((i-(n-1)/2)*SP, 0, 0);
+
+  function labelSprite(text, color){
+    const fontPx=64, c=document.createElement("canvas"), x=c.getContext("2d");
+    x.font=`600 ${fontPx}px 'IBM Plex Mono', monospace`;
+    const w=Math.ceil(x.measureText(text).width)+24, h=fontPx+18;
+    c.width=w; c.height=h;
+    x.font=`600 ${fontPx}px 'IBM Plex Mono', monospace`;
+    x.fillStyle=color; x.textBaseline="middle"; x.textAlign="center";
+    x.fillText(text,w/2,h/2);
+    const t=new THREE.CanvasTexture(c); t.anisotropy=4;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));
+    sp.scale.set(0.0085*w, 0.0085*h, 1);
+    return sp;
+  }
+  // nodes + labels
+  for(let i=0;i<n;i++){
+    const first=i===0, p=pos(i);
+    const node=new THREE.Mesh(new THREE.SphereGeometry(first?0.17:0.10,20,20),
+      new THREE.MeshBasicMaterial({color:first?ACCENT:GREY}));
+    node.position.copy(p); scene.add(node);
+    const lab=labelSprite(DATA.tokens[i]||"∅", first?"#2E6BDB":"#7A828D");
+    lab.position.set(p.x, -0.42, 0); scene.add(lab);
+  }
+  // arcs: every token q>=1 -> token 0, opacity = its attention to token 0
+  const p0=pos(0), arcs=[];
+  for(let q=1;q<n;q++){
+    const pq=pos(q);
+    const lift=0.5+0.18*Math.abs(q);
+    const ctrl=new THREE.Vector3((pq.x+p0.x)/2, lift, 0.0);
+    const curve=new THREE.QuadraticBezierCurve3(pq, ctrl, p0);
+    const geo=new THREE.TubeGeometry(curve, 26, 0.028, 8, false);
+    const mat=new THREE.MeshBasicMaterial({color:ACCENT, transparent:true, opacity:0.1});
+    const mesh=new THREE.Mesh(geo,mat); scene.add(mesh);
+    arcs.push({q, mat});
+  }
+
+  let L=0;
+  function setLayer(li){
+    L=li;
+    document.getElementById("lnum").textContent=String(li);
+    document.getElementById("range").value=String(li);
+    const row=DATA.w[li]||[];
+    for(const a of arcs){ a.mat.opacity = 0.08 + 0.9*Math.min(1, (row[a.q]||0)); }
+  }
+
+  const rowW=(n-1)*SP;
+  let fitted=false;
+  function resize(){
+    const w=wrap.clientWidth,h=wrap.clientHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect=w/h; camera.updateProjectionMatrix();
+    if(!fitted){
+      const vF=camera.fov*Math.PI/180, hF=2*Math.atan(Math.tan(vF/2)*camera.aspect);
+      const z=Math.max((rowW/2+0.6)/Math.tan(hF/2), 2.4/Math.tan(vF/2))+1.0;
+      camera.position.set(0,1.0,z);
+      controls.minDistance=z*0.5; controls.maxDistance=z*2.4; controls.target.set(0,0.3,0);
+      controls.update(); fitted=true;
+    }
+  }
+  window.addEventListener("resize",resize); resize();
+  setLayer(0);
+
+  function loop(){
+    requestAnimationFrame(loop);
+    if(!controls.autoRotate && performance.now()-_idle>2500) controls.autoRotate=true;
+    controls.update();
+    renderer.render(scene,camera);
+  }
+  loop();
+  const range=document.getElementById("range");
+  range.max=String(DATA.w.length-1);
+  range.addEventListener("input",()=>setLayer(+range.value));
+  let timer=null;
+  const play=document.getElementById("play");
+  play.addEventListener("click",()=>{
+    if(timer){clearInterval(timer);timer=null;play.classList.add("paused");play.innerHTML="&#9654; play depth";}
+    else{play.classList.remove("paused");play.textContent="❚❚ pause";
+      timer=setInterval(()=>setLayer((L+1)%DATA.w.length),800);}
+  });
+  ERR.style.display="none";
+} catch (e) {
+  ERR.textContent="3-D view couldn't load here — the heatmap above shows the same pattern.";
+  ERR.style.display="grid";
+  console.error("flow3d init failed", e);
+}
+</script></body></html>
