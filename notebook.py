@@ -693,6 +693,22 @@ def _(A, ACCENT, MONO, disp, mo, pd, pos_label, styled, tokens):
 Each token decides how much to **listen to** each earlier token. Read a row
 left-to-right: that's where one token sends its attention. Watch the leftmost
 column (token 0) — it tends to glow.
+
+<details>
+<summary><b>🔬 For the curious — the one critical gotcha</b></summary>
+
+<p>Two implementation details make these numbers trustworthy:</p>
+<ul>
+<li><b>Eager attention.</b> The model is loaded with <code>attn_implementation="eager"</code>.
+Modern <code>transformers</code> defaults to fused SDPA/Flash kernels that return
+<code>None</code> for the attention weights — without this flag there would be no
+heatmap at all.</li>
+<li><b>Query row 0 is excluded.</b> Under the causal mask the first token can only
+attend to itself, so its row is a trivial 100% on token 0. Every sink statistic
+here averages over query rows <i>1…n</i> only — otherwise that one degenerate row
+would inflate the number.</li>
+</ul>
+</details>
 """
     )
     return df, heat, labels
@@ -989,8 +1005,25 @@ one another — exactly the *over-mixing* the paper warns about. The
 for reference (it sits apart in the early layers); the sink is what keeps the
 meaningful tokens from collapsing even faster.
 
-_Direction-only (cosine) 2-D PCA, each layer centered on a shared frame —
-illustrative, in the spirit of the paper, not its formal rank measure._"""
+<details>
+<summary><b>🔬 For the curious — how we measure "collapse"</b></summary>
+
+<p>This is a 2-D PCA of the token representations, with two deliberate choices so
+it matches the paper's notion of <i>representational collapse</i>:</p>
+<ul>
+<li><b>Direction, not magnitude.</b> Each token vector is unit-normalized before
+projecting, so you're seeing the <i>angle</i> between representations — exactly
+what cosine similarity (and the over-mixing meter in §08) measures. Deep layers
+inflate vector norms; without normalizing, the dots would drift apart by magnitude
+and hide the collapse.</li>
+<li><b>Each layer is re-centered.</b> We subtract each layer's content-token
+centroid, so the cloud's <i>size</i> is what changes on screen — that shrinking
+spread <i>is</i> the collapse — rather than the cloud drifting around the frame.</li>
+</ul>
+<p>It's an illustration in the spirit of the paper, not a reproduction of its
+formal rank measure — but the trend (spread up top, a tight clump deep down) is
+the real over-mixing the sink defends against.</p>
+</details>"""
             ),
             mo.ui.altair_chart(styled(_pts + _labels, h=460, frame=True)),
         ],
