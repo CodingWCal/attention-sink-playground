@@ -16,7 +16,7 @@ into something you can see, poke, and break.
 
 **▶ [Open the live app in molab](https://molab.marimo.io/notebooks/nb_BjxT4fWi3DtMSNFA7kVXk7/app)** — the interactive notebook, rendered and ready to explore.
 
-_Prefer the source? [Open in molab](https://molab.marimo.io/notebooks/nb_BjxT4fWi3DtMSNFA7kVXk7s) to read the code, click **Run it now**, or fork your own copy._
+_Prefer the source? [Open in molab](https://molab.marimo.io/notebooks/nb_BjxT4fWi3DtMSNFA7kVXk7) to read the code, click **Run it now**, or fork your own copy._
 
 > ⏳ **First load takes ~30s** while molab cold-starts its compute and downloads GPT-2 (~500 MB). A brief loading flash on a cold backend is normal — give it a moment, and reload if needed. Subsequent runs are instant (the model is cached).
 
