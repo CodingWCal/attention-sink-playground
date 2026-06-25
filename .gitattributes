@@ -1,0 +1,4 @@
+# Exclude design mockups and docs from GitHub Linguist language stats so the repo
+# is identified as a Python / marimo project, not HTML/JavaScript.
+design/** linguist-vendored
+docs/**   linguist-documentation
